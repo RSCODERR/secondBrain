@@ -21,18 +21,16 @@ function DashBoard() {
   const { contents, loading, error, refetch } = useContent()
 
   async function handleDelete(contentId: string) {
-  try {
-    await axios.delete(
-      `${BACKEND_URL}/api/v1/content/${contentId}`,
-      { withCredentials: true }
-    )
-
-    refetch() // refresh list
-  } catch {
-    alert("Failed to delete content")
+    try {
+      await axios.delete(
+        `${BACKEND_URL}/api/v1/content/${contentId}`,
+        { withCredentials: true }
+      )
+      refetch() // refresh list
+    } catch {
+      alert("Failed to delete content")
+    }
   }
-}
-
 
   return (
     <>
@@ -69,34 +67,34 @@ function DashBoard() {
           />
         </div>
 
-        <div className="grid grid-cols-4 gap-4 mt-6">
+        <div className="flex flex-wrap gap-4 mt-6">
 
           {loading && (
-            <div className="col-span-4 flex justify-center items-center">
+            <div className="w-full flex justify-center items-center">
               <LoaderIcon />
             </div>
           )}
 
           {error && (
-            <div className="col-span-4 text-red-500 text-center">
+            <div className="w-full text-red-500 text-center">
               {error}
             </div>
           )}
 
           {!loading && !error &&
             contents
-            .filter(content => !filterType || content.type === filterType)
-            .map(({ _id, type, link, title, note }) => (
-              <Card
-                key={_id}
-                id={_id}
-                type={type}
-                link={link}
-                note={note}
-                title={title}
-                onDelete={handleDelete}
-              />
-            ))
+              .filter(content => !filterType || content.type === filterType)
+              .map(({ _id, type, link, title, note }) => (
+                <Card
+                  key={_id}
+                  id={_id}
+                  type={type}
+                  link={link}
+                  note={note}
+                  title={title}
+                  onDelete={handleDelete}
+                />
+              ))
           }
 
         </div>

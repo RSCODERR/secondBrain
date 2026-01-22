@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { BrainIcon } from "../icons/brainIcon";
 import { LinkIcon } from "../icons/linkIcon";
 import { NoteIcon } from "../icons/noteIcon";
@@ -17,7 +18,7 @@ export function SideBar(props: SideBarProps){
                     <BrainIcon />
                 </div>
                 <div className="font-semibold">
-                    Second Brain
+                    <Link to="/dashboard" className="hover:cursor-pointer">Second Brain</Link> 
                 </div>
             </div>
             <div className="pt-8 pl-4">
