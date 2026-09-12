@@ -51,8 +51,8 @@ export function Signup(){
     }
 
     return(
-        <div className="h-screen w-screen bg-linear-to-br from-purple-100 via-white to-indigo-100 flex justify-center items-center">
-            <div className="bg-white rounded-2xl border border-gray-200 min-w-90 p-8 shadow-xl transition-transform duration-300 hover:-translate-y-1">
+        <div className="min-h-screen w-full bg-linear-to-br from-purple-100 via-white to-indigo-100 flex justify-center items-center p-4 sm:p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md p-6 sm:p-8 shadow-xl transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex justify-center items-center mb-6">
                     <div className="bg-purple-100 p-3 rounded-full text-purple-600">
                         <BrainIcon />

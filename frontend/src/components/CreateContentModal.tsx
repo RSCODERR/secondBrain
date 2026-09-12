@@ -77,13 +77,14 @@ export function CreateContentModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={onClose} />
 
-      <div className="relative bg-white rounded-lg w-96 p-5 z-10">
+      <div className="relative bg-white rounded-2xl w-full max-w-md p-5 sm:p-6 z-10 max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Close */}
-        <div className="flex justify-end">
-          <div onClick={onClose} className="cursor-pointer">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-bold text-gray-900">Add New Content</h2>
+          <div onClick={onClose} className="cursor-pointer text-gray-500 hover:text-gray-900 p-1">
             <CrossIcon size="md" />
           </div>
         </div>

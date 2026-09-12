@@ -34,17 +34,17 @@ export function ShareBrainModal({ open, onClose }: ShareBrainModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={onClose}
       />
       
-      <div className="relative bg-white p-6 rounded-lg w-96 z-10">
+      <div className="relative bg-white p-6 rounded-2xl w-full max-w-md z-10 shadow-2xl">
         
         <div
-          className="absolute top-3 right-3 cursor-pointer text-gray-500 hover:text-black"
+          className="absolute top-4 right-4 cursor-pointer text-gray-500 hover:text-black p-1"
           onClick={onClose}
         >
           <CrossIcon size="md" />
