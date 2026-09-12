@@ -1,6 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import cookieParser from "cookie-parser";
+import mongoose from "mongoose";
 import connectDB from "./database/database";
 import { User } from "./models/user.model";
 import { content } from "./models/content.model";
@@ -264,6 +265,44 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
 
 
 
+// Health check endpoint that keeps Render awake and pings MongoDB Atlas
+app.get("/api/v1/health", async (_req, res) => {
+    try {
+        const dbState = mongoose.connection.readyState;
+        const isDbReady = dbState === 1;
+        if (isDbReady && mongoose.connection.db) {
+            await mongoose.connection.db.admin().ping();
+        }
+        res.status(200).json({
+            status: "ok",
+            uptime: Math.floor(process.uptime()),
+            db: isDbReady ? "connected" : "connecting"
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+
 connectDB();
 
-app.listen(3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+});
+
+// Keep-Alive self-ping: Runs every 14 minutes in production to prevent Render spin-down
+const KEEP_ALIVE_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL || "https://secondbrain-pur4.onrender.com";
+if (process.env.NODE_ENV === "production" || process.env.ENABLE_KEEP_ALIVE === "true") {
+    console.log(`[KeepAlive] Scheduled to ping ${KEEP_ALIVE_URL}/api/v1/health every 14 minutes`);
+    setInterval(async () => {
+        try {
+            const response = await fetch(`${KEEP_ALIVE_URL}/api/v1/health`);
+            console.log(`[KeepAlive] Pinged ${KEEP_ALIVE_URL}/api/v1/health - Status: ${response.status}`);
+        } catch (err) {
+            console.error("[KeepAlive] Self-ping failed:", err);
+        }
+    }, 14 * 60 * 1000);
+}

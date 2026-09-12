@@ -1,0 +1,22 @@
+name: Keep Render & MongoDB Atlas Awake
+
+on:
+  schedule:
+    # Runs every 14 minutes (Render sleeps after 15 minutes of inactivity)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keep-awake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health Endpoint
+        run: |
+          echo "Pinging Second Brain backend on Render..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://secondbrain-pur4.onrender.com/api/v1/health)
+          echo "Response HTTP Status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Successfully pinged backend and MongoDB Atlas!"
+          else
+            echo "Ping returned status $STATUS (backend might be waking up from cold start)"
+          fi
