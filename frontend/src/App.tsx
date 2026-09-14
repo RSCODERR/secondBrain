@@ -4,6 +4,7 @@ import { SignIn } from "./pages/signIn"
 import { Signup } from "./pages/signup"
 import LandingPage from "./pages/landingPage"
 import ShareView from "./pages/shareview"
+import ShareCardView from "./pages/shareCardView"
 
 function App(){
     return(
@@ -13,6 +14,7 @@ function App(){
             <Route path="/dashboard" element = {<DashBoard/>} />
             <Route path="/" element = {<LandingPage />} />
             <Route path="/share/:shareLink" element={<ShareView />} />
+            <Route path="/share/card/:id" element={<ShareCardView />} />
         </Routes>
     )
 }

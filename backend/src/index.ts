@@ -263,6 +263,36 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
     }
     });
 
+app.get("/api/v1/card/:id", async (req, res) => {
+    try {
+        const contentId = req.params.id;
+        const item = await content.findById(contentId).populate("userId", "username");
+
+        if (!item) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        // @ts-ignore
+        const username = item.userId?.username || "A Second Brain user";
+
+        return res.json({
+            content: {
+                _id: item._id,
+                title: item.title,
+                type: item.type,
+                link: item.link,
+                note: item.note
+            },
+            username
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Invalid card ID or server error"
+        });
+    }
+});
+
 
 
 // Health check endpoint that keeps Render awake and pings MongoDB Atlas
