@@ -1,6 +1,6 @@
 import { type Iconprops, iconSizeVarients } from "./iconprops";
 
-export function LinkIcon(props?: Partial<Iconprops>) {
+export function LogoutIcon(props?: Partial<Iconprops>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -12,8 +12,9 @@ export function LinkIcon(props?: Partial<Iconprops>) {
       strokeLinejoin="round"
       className={iconSizeVarients[props?.size || "md"]}
     >
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }

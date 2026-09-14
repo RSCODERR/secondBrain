@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(cors({
     origin: ["https://second-brain-eight-delta.vercel.app","http://localhost:5173"],
     credentials: true,
-    methods:['GET','POST','PUT','DELETE']
+    methods:['GET','POST','PUT','DELETE','OPTIONS']
 }
 ));
 app.use(cookieParser());
@@ -90,19 +90,50 @@ app.post("/api/v1/signin", async (req, res) => {
 
      const token = jwt.sign({ id: user.id, username: user.username}, process.env.JWT_SECRET!,{expiresIn: "10d"});
 
+     const isProduction = process.env.NODE_ENV === "production";
+
      res.cookie("token", token, {
       httpOnly: true,
-      secure: true,        
-      sameSite: "none",    
+      secure: isProduction,        
+      sameSite: isProduction ? "none" : "lax",    
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
-
 
      res.status(200).json({
         msg: "Logged in successfully",
      })
 
 })
+
+app.get("/api/v1/me", userMiddleware, async (req, res) => {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+        const user = await User.findById(userId).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res.json({
+            authenticated: true,
+            user: {
+                id: user._id,
+                username: user.username
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+app.post("/api/v1/logout", (req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+    });
+    return res.json({ message: "Logged out successfully" });
+});
 
 app.post("/api/v1/content", userMiddleware, async (req, res) => {
   try {
@@ -190,16 +221,70 @@ app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
         }
 
         return res.json({
-          message: "deleted successfully"
+          message: "content deleted successfully"
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+});
+
+app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
+    try {
+        const contentId = req.params.id;
+        // @ts-ignore
+        const userId = req.userId;
+        const { title, link, type, note } = req.body;
+
+        if (!title || !type) {
+            return res.status(400).json({
+                message: "title and type are required"
+            });
+        }
+
+        if (type === "note" && !note) {
+            return res.status(400).json({
+                message: "note content is required"
+            });
+        }
+
+        if (type !== "note" && !link) {
+            return res.status(400).json({
+                message: "link is required"
+            });
+        }
+
+        const updated = await content.findOneAndUpdate(
+            { _id: contentId, userId },
+            {
+                title,
+                type,
+                link: type === "note" ? null : link,
+                note: type === "note" ? note : null
+            },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({
+                message: "content not found or not authorized"
+            });
+        }
+
+        return res.json({
+            message: "content updated successfully",
+            content: updated
         });
 
     } catch (error) {
         console.error(error);
         return res.status(500).json({
-          message: "internal server error"
+            message: "internal server error"
         });
     }
-    });
+});
 
 app.post("/api/v1/brain/share",userMiddleware, async (req,res) => {
     try {

@@ -5,11 +5,13 @@ import { BrainIcon } from "../icons/brainIcon";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
+import { useAuth } from "../context/AuthContext";
 
 export function SignIn(){
     const usernameRef = useRef<HTMLInputElement | null>(null);
     const passwordRef = useRef<HTMLInputElement | null>(null);
     const navigate = useNavigate();
+    const { checkAuth } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState< string | null> (null);
     const [passwordError, setPasswordError] = useState(false);
@@ -38,6 +40,7 @@ export function SignIn(){
         { withCredentials: true }
     );
 
+        await checkAuth();
         navigate("/dashboard");
 
         } catch (err: unknown) {

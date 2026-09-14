@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { CrossIcon } from "../icons/crossIcon"
 import { Button } from "./button"
 import { Input } from "./Input"
@@ -6,14 +6,23 @@ import { YoutubeIcon } from "../icons/youTubeIcon"
 import { TwitterIcon } from "../icons/twitterIcon"
 import { LinkIcon } from "../icons/linkIcon"
 import { NoteIcon } from "../icons/noteIcon"
-import { BrainIcon } from "../icons/brainIcon"
+import { EditIcon } from "../icons/editIcon"
 import { BACKEND_URL } from "../config"
 import axios from "axios"
 
 export type ContentType = "youtube" | "twitter" | "link" | "note"
 
-interface CreateContentModalProps {
+export interface ContentItem {
+  _id: string
+  title: string
+  link?: string | null
+  note?: string | null
+  type: ContentType
+}
+
+interface EditContentModalProps {
   open: boolean
+  content: ContentItem | null
   onClose: () => void
   onSuccess: () => void
 }
@@ -53,39 +62,48 @@ const typeOptions = [
   },
 ]
 
-export function CreateContentModal({
+export function EditContentModal({
   open,
+  content,
   onClose,
   onSuccess
-}: CreateContentModalProps) {
-  const titleRef = useRef<HTMLInputElement | null>(null)
-  const linkRef = useRef<HTMLInputElement | null>(null)
-  const noteRef = useRef<HTMLTextAreaElement | null>(null)
-
+}: EditContentModalProps) {
+  const [title, setTitle] = useState("")
   const [type, setType] = useState<ContentType>("youtube")
+  const [link, setLink] = useState("")
+  const [note, setNote] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function addcontent() {
-    const title = titleRef.current?.value.trim()
-    const link = linkRef.current?.value.trim()
-    const note = noteRef.current?.value.trim()
+  useEffect(() => {
+    if (content) {
+      setTitle(content.title || "")
+      setType(content.type || "youtube")
+      setLink(content.link || "")
+      setNote(content.note || "")
+      setError(null)
+    }
+  }, [content, open])
 
-    if (!title) {
-      setError("Please give your content a title")
-      titleRef.current?.focus()
+  async function handleUpdate() {
+    if (!content) return
+
+    const trimmedTitle = title.trim()
+    const trimmedLink = link.trim()
+    const trimmedNote = note.trim()
+
+    if (!trimmedTitle) {
+      setError("Title is required")
       return
     }
 
-    if (type !== "note" && !link) {
-      setError(`Please provide a ${type === "youtube" ? "YouTube" : type === "twitter" ? "Twitter" : "valid"} link`)
-      linkRef.current?.focus()
+    if (type !== "note" && !trimmedLink) {
+      setError("Link is required")
       return
     }
 
-    if (type === "note" && !note) {
-      setError("Please write some note content")
-      noteRef.current?.focus()
+    if (type === "note" && !trimmedNote) {
+      setError("Note content cannot be empty")
       return
     }
 
@@ -93,35 +111,31 @@ export function CreateContentModal({
       setLoading(true)
       setError(null)
 
-      await axios.post(
-        `${BACKEND_URL}/api/v1/content`,
+      await axios.put(
+        `${BACKEND_URL}/api/v1/content/${content._id}`,
         {
-          title,
+          title: trimmedTitle,
           type,
-          link: type === "note" ? null : link,
-          note: type === "note" ? note : null
+          link: type === "note" ? null : trimmedLink,
+          note: type === "note" ? trimmedNote : null
         },
         { withCredentials: true }
       )
 
-      if (titleRef.current) titleRef.current.value = ""
-      if (linkRef.current) linkRef.current.value = ""
-      if (noteRef.current) noteRef.current.value = ""
-
       onSuccess()
       onClose()
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to add content. Please try again.")
+      setError(err?.response?.data?.message || "Failed to update content")
     } finally {
       setLoading(false)
     }
   }
 
-  if (!open) return null
+  if (!open || !content) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      {/* Ambient backdrop */}
+      {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity" 
         onClick={onClose} 
@@ -132,11 +146,11 @@ export function CreateContentModal({
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-500/25 shrink-0">
-              <BrainIcon />
+              <EditIcon size="md" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Add to Second Brain</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Capture links, media, and thoughts in one place</p>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Edit Content</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Update title, category, or note details</p>
             </div>
           </div>
 
@@ -149,10 +163,10 @@ export function CreateContentModal({
           </button>
         </div>
 
-        {/* Content Type Selector Tiles */}
+        {/* Type Selector Tiles */}
         <div className="mb-5">
           <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-            Select Type
+            Change Type
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {typeOptions.map((opt) => {
@@ -177,38 +191,28 @@ export function CreateContentModal({
           </div>
         </div>
 
-        {/* Inputs */}
+        {/* Form Inputs */}
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
               Title
             </label>
             <Input
-              reference={titleRef}
-              placeholder="e.g. Distributed Systems Masterclass or Project Roadmap"
-              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Content title"
             />
           </div>
 
           {type !== "note" ? (
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  {type === "youtube" ? "YouTube Video URL" : type === "twitter" ? "Twitter / X URL" : "Web URL"}
-                </label>
-                <span className="text-[11px] text-gray-400">
-                  {type === "youtube" ? "Supports Shorts & Videos" : type === "twitter" ? "x.com or twitter.com" : "Any valid https:// link"}
-                </span>
-              </div>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                {type === "youtube" ? "YouTube Video URL" : type === "twitter" ? "Twitter / X URL" : "Web URL"}
+              </label>
               <Input
-                reference={linkRef}
-                placeholder={
-                  type === "youtube"
-                    ? "https://www.youtube.com/watch?v=..."
-                    : type === "twitter"
-                    ? "https://x.com/username/status/..."
-                    : "https://example.com/article"
-                }
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="Paste link here"
               />
             </div>
           ) : (
@@ -217,9 +221,10 @@ export function CreateContentModal({
                 Note Content
               </label>
               <textarea
-                ref={noteRef}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
                 rows={5}
-                placeholder="Write your note, summary, reminders, or code snippets here..."
+                placeholder="Write your note here..."
                 className="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-2xl resize-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 shadow-xs"
               />
             </div>
@@ -246,8 +251,8 @@ export function CreateContentModal({
             varient="primary"
             size="md"
             loading={loading}
-            text={loading ? "Saving..." : "Add Content"}
-            onClick={addcontent}
+            text={loading ? "Updating..." : "Save Changes"}
+            onClick={handleUpdate}
           />
         </div>
       </div>

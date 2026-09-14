@@ -47,42 +47,44 @@ export function ShareBrainModal({ open, onClose }: ShareBrainModalProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+        className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative bg-white p-6 rounded-2xl w-full max-w-md z-10 shadow-2xl">
-        <div
-          className="absolute top-4 right-4 cursor-pointer text-gray-400 hover:text-gray-800 p-1"
+      <div className="relative bg-white p-6 sm:p-7 rounded-3xl w-full max-w-md z-10 shadow-2xl border border-gray-100 my-auto">
+        <button
+          className="absolute top-5 right-5 p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
           onClick={onClose}
+          aria-label="Close modal"
         >
           <CrossIcon size="md" />
-        </div>
+        </button>
 
-        {/* Modal Header Icon */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+        {/* Modal Header */}
+        <div className="flex items-center gap-3.5 mb-5">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-purple-500/25 shrink-0">
             <BrainIcon />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
-              Share Your Second Brain
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+              Share Your Brain
             </h2>
-            <p className="text-xs text-gray-500">
-              Anyone with this link can view your saved memories
+            <p className="text-xs text-gray-500 mt-0.5">
+              Anyone with this link can view your curated collection
             </p>
           </div>
         </div>
 
         {/* Expiration notice */}
-        <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 flex items-start gap-2.5 mb-5">
-          <span className="text-sm">⏱️</span>
-          <div className="text-xs text-purple-900">
-            <strong>Public Read-Only Link</strong>
-            <p className="text-purple-700 mt-0.5">
-              The link gives read-only access to your notes and expires automatically in 24 hours.
+        <div className="bg-purple-50/80 border border-purple-100/90 rounded-2xl p-3.5 flex items-start gap-3 mb-5">
+          <span className="text-base shrink-0 mt-0.5">⏱️</span>
+          <div className="text-xs text-purple-950 leading-relaxed">
+            <strong className="font-semibold text-purple-900">24-Hour Public Access</strong>
+            <p className="text-purple-700/90 mt-0.5">
+              This link gives read-only access to your notes and links. It expires automatically after 24 hours.
             </p>
           </div>
         </div>
@@ -100,27 +102,27 @@ export function ShareBrainModal({ open, onClose }: ShareBrainModalProps) {
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Your Shareable Link
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                Shareable Link
               </label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   readOnly
                   value={link}
-                  className="w-full bg-zinc-50 border border-gray-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-mono text-gray-700 select-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-gray-700 select-all focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 shadow-2xs"
                 />
                 <button
                   onClick={() => copyToClipboard(link)}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold shrink-0 transition cursor-pointer flex items-center gap-1 ${
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-[0.98] ${
                     copied
-                      ? "bg-green-600 text-white"
-                      : "bg-purple-600 hover:bg-purple-700 text-white"
+                      ? "bg-emerald-600 text-white shadow-emerald-500/20"
+                      : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-purple-500/20"
                   }`}
                 >
                   {copied ? (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                       </svg>
                       <span>Copied!</span>
@@ -137,18 +139,18 @@ export function ShareBrainModal({ open, onClose }: ShareBrainModalProps) {
                 href={link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-medium text-purple-600 hover:text-purple-800 flex items-center gap-1 underline"
+                className="text-xs font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1 hover:underline"
               >
-                <span>Preview public view</span>
+                <span>Preview Public Brain</span>
                 <span>↗</span>
               </a>
 
               <button
                 onClick={generateLink}
                 disabled={loading}
-                className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer underline disabled:opacity-50"
+                className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer hover:underline disabled:opacity-50 font-medium"
               >
-                Regenerate link
+                Regenerate Link
               </button>
             </div>
           </div>

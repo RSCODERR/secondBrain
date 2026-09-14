@@ -29,3 +29,13 @@
 .animate-shake {
     animation: shake 0.4s ease-in-out;
 }
+
+/* Hide native browser password reveal button (Edge/Chrome) */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+}

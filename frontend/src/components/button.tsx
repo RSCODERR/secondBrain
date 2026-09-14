@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { LoaderIcon } from "../icons/loaderIcon"
 
-type varients = "primary" | "secondary"
+type varients = "primary" | "secondary" | "danger" | "ghost"
 
 interface ButtonProps {
   varient: varients
@@ -12,26 +12,36 @@ interface ButtonProps {
   onClick?: () => void
   fullWidth?: boolean
   loading?: boolean
+  className?: string
+  disabled?: boolean
+  type?: "button" | "submit" | "reset"
 }
 
 const varientStyles = {
-  primary: "bg-indigo-600 text-white enabled:hover:bg-indigo-700",
-  secondary: "bg-indigo-200 text-indigo-500 enabled:hover:bg-indigo-300",
+  primary:
+    "bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 text-white shadow-sm shadow-indigo-500/25 hover:shadow-md hover:shadow-indigo-500/35 hover:brightness-105 border border-white/15",
+  secondary:
+    "bg-white text-gray-700 hover:text-gray-900 border border-gray-200/90 hover:bg-gray-50/90 hover:border-gray-300 shadow-xs hover:shadow-sm",
+  danger:
+    "bg-red-50/90 text-red-600 hover:text-red-700 border border-red-200/80 hover:bg-red-100/80 hover:border-red-300 shadow-xs",
+  ghost:
+    "bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 border border-transparent",
 }
 
 const sizeStyles = {
-  sm: "py-1 px-2 text-sm",
-  md: "py-2 px-4 text-md",
-  lg: "py-4 px-6 text-xl",
+  sm: "min-h-[36px] py-1.5 px-3 text-xs sm:text-sm font-medium gap-1.5 whitespace-nowrap",
+  md: "min-h-[44px] py-2.5 px-4 text-sm font-semibold gap-2 whitespace-nowrap",
+  lg: "min-h-[48px] py-3 px-6 text-base font-semibold gap-2.5 whitespace-nowrap",
 }
 
 const defaultStyles =
-  "hover:cursor-pointer rounded-md flex items-center justify-center shadow-md transition-all duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:scale-100"
+  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight shrink-0 box-border"
 
 export const Button = (props: ButtonProps) => {
   return (
     <button
-      disabled={props.loading}
+      type={props.type || "button"}
+      disabled={props.loading || props.disabled}
       onClick={props.onClick}
       className={`
         relative
@@ -39,19 +49,19 @@ export const Button = (props: ButtonProps) => {
         ${sizeStyles[props.size]}
         ${defaultStyles}
         ${props.fullWidth ? "w-full" : ""}
-        disabled:opacity-60
+        ${props.className || ""}
       `}
     >
       {props.loading && (
-        <span className="absolute">
+        <span className="absolute flex items-center justify-center">
           <LoaderIcon />
         </span>
       )}
 
-      <span className={props.loading ? "opacity-0" : "flex items-center gap-2"}>
-        {props.startIcon}
-        {props.text}
-        {props.endIcon}
+      <span className={`inline-flex items-center justify-center gap-2 whitespace-nowrap ${props.loading ? "opacity-0" : ""}`}>
+        {props.startIcon && <span className="shrink-0 flex items-center justify-center">{props.startIcon}</span>}
+        <span className="truncate">{props.text}</span>
+        {props.endIcon && <span className="shrink-0 flex items-center justify-center">{props.endIcon}</span>}
       </span>
     </button>
   )
