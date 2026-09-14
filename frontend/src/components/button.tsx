@@ -19,13 +19,13 @@ interface ButtonProps {
 
 const varientStyles = {
   primary:
-    "bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 text-white shadow-sm shadow-indigo-500/25 hover:shadow-md hover:shadow-indigo-500/35 hover:brightness-105 border border-white/15",
+    "bg-[#2d4a31] text-white shadow-sm shadow-green-900/20 hover:bg-[#3a5e40] hover:shadow-md hover:shadow-green-900/30 border border-white/10",
   secondary:
-    "bg-white text-gray-700 hover:text-gray-900 border border-gray-200/90 hover:bg-gray-50/90 hover:border-gray-300 shadow-xs hover:shadow-sm",
+    "bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 hover:bg-stone-50/90 hover:border-stone-300 shadow-xs hover:shadow-sm",
   danger:
     "bg-red-50/90 text-red-600 hover:text-red-700 border border-red-200/80 hover:bg-red-100/80 hover:border-red-300 shadow-xs",
   ghost:
-    "bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100/70 border border-transparent",
+    "bg-transparent text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent",
 }
 
 const sizeStyles = {
@@ -35,7 +35,7 @@ const sizeStyles = {
 }
 
 const defaultStyles =
-  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight shrink-0 box-border"
+  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight shrink-0 box-border"
 
 export const Button = (props: ButtonProps) => {
   return (

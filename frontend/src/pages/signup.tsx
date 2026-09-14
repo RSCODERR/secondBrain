@@ -1,102 +1,260 @@
-import { useRef, useState } from "react";
-import { Button } from "../components/button";
-import { Input } from "../components/Input";
-import { BrainIcon } from "../icons/brainIcon";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
-import { Link,useNavigate } from "react-router-dom";
+import { Button } from "../components/button";
+import { AuthLayout } from "../components/AuthLayout";
+import { UserIcon } from "../icons/userIcon";
+import { LockIcon } from "../icons/lockIcon";
+import { EyeopenIcon } from "../icons/eyeopenIcon";
+import { EyeoffIcon } from "../icons/eyeoffIcon";
+import "../App.css";
 
-export function Signup(){
-    const usernameRef = useRef<HTMLInputElement | null>(null);
-    const passwordRef = useRef<HTMLInputElement | null>(null);
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export function Signup() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    async function signup(){
-        try {
-            setLoading(true);
-            setError(null);
+  const navigate = useNavigate();
 
-            const username = usernameRef.current?.value;
-            const password = passwordRef.current?.value;
-            const res = await axios.post(`${BACKEND_URL}/api/v1/signup`,{
-                username,
-                password
-            })
+  // Password strength calculation
+  const getPasswordStrength = () => {
+    if (!password) return 0;
+    let score = 0;
+    if (password.length >= 6) score += 1;
+    if (password.length >= 10) score += 1;
+    if (/[0-9]/.test(password) && /[a-zA-Z]/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    return score; // 0 to 4
+  };
 
-            if(res.status === 201){
-                navigate("/signin");
-            }
+  const strength = getPasswordStrength();
+  const strengthLabels = ["Too short", "Fair", "Good", "Strong", "Very Strong"];
+  const strengthColors = [
+    "bg-gray-200",
+    "bg-red-500",
+    "bg-amber-500",
+    "bg-indigo-500",
+    "bg-emerald-500"
+  ];
 
-        } catch (err: any) {
-            if(axios.isAxiosError(err)){
-                const status = err.response?.status;
-                
-                if(status === 400){
-                    setError("Username must be 4-25 chars, password at least 6 chars");
-                }else if(status === 409){
-                    setError("Username already taken");
-                }else if(status === 500){
-                    setError("server error try again later")
-                }else{
-                    setError("unexpected error");
-                }
-            }else{
-                setError("network Error")
-            }
-        }finally{
-            setLoading(false);
-        }
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const trimmedUsername = username.trim();
+    if (trimmedUsername.length < 4 || trimmedUsername.length > 25) {
+      setError("Username must be between 4 and 25 characters");
+      return;
     }
 
-    return(
-        <div className="min-h-screen w-full bg-linear-to-br from-purple-100 via-white to-indigo-100 flex justify-center items-center p-4 sm:p-6">
-            <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md p-6 sm:p-8 shadow-xl transition-transform duration-300 hover:-translate-y-1">
-                <div className="flex justify-center items-center mb-6">
-                    <div className="bg-purple-100 p-3 rounded-full text-purple-600">
-                        <BrainIcon />
-                    </div>
-                </div>
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
 
-                <h2 className="text-2xl font-semibold text-center mb-1">
-                    Create your account
-                </h2>
-                <p className="text-sm text-gray-500 text-center mb-6">
-                    Start building your Second Brain
-                </p>
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
-                <div className="flex flex-col justify-center items-center gap-2">
-                    <Input reference={usernameRef} placeholder="Username" />
-                    <Input reference={passwordRef} placeholder="Password" type="password" />
-                </div>
+    try {
+      setLoading(true);
 
-                {error && (
-                    <p className="text-red-500 text-sm text-center mt-3">
-                        {error}
-                    </p>
-                )}
+      const res = await axios.post(`${BACKEND_URL}/api/v1/signup`, {
+        username: trimmedUsername,
+        password: password,
+      });
 
-                <div className="flex justify-center pt-6">
-                    <Button
-                        onClick={signup}
-                        varient="primary"
-                        size="md"
-                        text="Signup"
-                        fullWidth={true}
-                        loading={loading}
-                    />
-                </div>
+      if (res.status === 201) {
+        navigate("/signin");
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 400) {
+          setError("Username must be 4-25 chars, password at least 6 chars");
+        } else if (status === 409) {
+          setError("Username already taken. Please pick another one.");
+        } else if (status === 500) {
+          setError("Server error. Please try again in a few moments.");
+        } else {
+          setError(err.response?.data?.error || "Failed to create account.");
+        }
+      } else {
+        setError("Network error. Please check your connection.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
-                <div className="flex justify-center items-center pt-5 text-sm">
-                    <span className="text-gray-600">
-                        Already have an account?{" "}
-                        <Link to="/signin" className="text-purple-600 font-medium hover:underline">
-                            Login
-                        </Link>
-                    </span>
-                </div>
-            </div>
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+
+  return (
+    <AuthLayout
+      activeTab="signup"
+      title="Create your account"
+      subtitle="Join Second Brain to collect, organize, and retrieve your digital knowledge"
+      footer={
+        <p className="text-stone-600">
+          Already have an account?{" "}
+          <Link
+            to="/signin"
+            className="text-[#3a5e40] font-semibold hover:text-[#2d4a31] hover:underline transition-colors"
+          >
+            Sign in
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Username */}
+        <div>
+          <label className="block text-xs font-semibold text-stone-600 uppercase tracking-wider mb-1.5">
+            Username
+          </label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <UserIcon size="sm" />
+            </span>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="e.g. alex_rivera"
+              autoFocus
+              className="w-full pl-10 pr-4 py-2.5 text-sm sm:text-base text-stone-900 bg-white border border-stone-200 rounded-xl transition-all duration-200 placeholder:text-stone-400 hover:border-stone-300 focus:outline-none focus:border-[#4a7a50] focus:ring-4 focus:ring-[#4a7a50]/10 shadow-xs"
+            />
+          </div>
+          <span className="text-[11px] text-stone-400 mt-1 block">
+            4-25 characters, letters and numbers
+          </span>
         </div>
-    )
+
+        {/* Password */}
+        <div>
+          <label className="block text-xs font-semibold text-stone-600 uppercase tracking-wider mb-1.5">
+            Password
+          </label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <LockIcon size="sm" />
+            </span>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="At least 6 characters"
+              className="w-full pl-10 pr-11 py-2.5 text-sm sm:text-base text-stone-900 bg-white border border-stone-200 rounded-xl transition-all duration-200 placeholder:text-stone-400 hover:border-stone-300 focus:outline-none focus:border-[#4a7a50] focus:ring-4 focus:ring-[#4a7a50]/10 shadow-xs"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors cursor-pointer"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeoffIcon /> : <EyeopenIcon />}
+            </button>
+          </div>
+
+          {/* Password Strength Meter */}
+          {password.length > 0 && (
+            <div className="mt-2 space-y-1.5 animate-fade-in-up">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-gray-500">Password strength:</span>
+                <span className="font-semibold text-gray-700">
+                  {strengthLabels[strength]}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                {[1, 2, 3, 4].map((step) => (
+                  <div
+                    key={step}
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      strength >= step ? strengthColors[strength] : "bg-gray-100"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Confirm Password */}
+        <div>
+          <label className="block text-xs font-semibold text-stone-600 uppercase tracking-wider mb-1.5">
+            Confirm Password
+          </label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <LockIcon size="sm" />
+            </span>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Re-enter your password"
+              className={`w-full pl-10 pr-11 py-2.5 text-sm sm:text-base text-stone-900 bg-white border rounded-xl transition-all duration-200 placeholder:text-stone-400 hover:border-stone-300 focus:outline-none focus:ring-4 shadow-xs ${
+                confirmPassword && !passwordsMatch
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500/15"
+                  : confirmPassword && passwordsMatch
+                  ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/15"
+                  : "border-stone-200 focus:border-[#4a7a50] focus:ring-[#4a7a50]/10"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors cursor-pointer"
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeoffIcon /> : <EyeopenIcon />}
+            </button>
+          </div>
+          {confirmPassword && (
+            <span
+              className={`text-[11px] mt-1 block font-medium ${
+                passwordsMatch ? "text-emerald-600" : "text-red-500"
+              }`}
+            >
+              {passwordsMatch ? "✓ Passwords match" : "✗ Passwords do not match"}
+            </span>
+          )}
+        </div>
+
+        {/* Inline Error Pill */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl text-xs text-red-600 font-medium flex items-center gap-2 animate-fade-in-up">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <div className="pt-2">
+          <Button
+            type="submit"
+            varient="primary"
+            size="md"
+            text={loading ? "Creating account..." : "Create Account"}
+            fullWidth
+            loading={loading}
+          />
+        </div>
+      </form>
+    </AuthLayout>
+  );
 }
