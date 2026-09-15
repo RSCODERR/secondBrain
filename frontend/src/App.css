@@ -97,6 +97,21 @@ input::-webkit-credentials-auto-fill-button {
 .delay-800 { animation-delay: 0.80s; }
 .delay-900 { animation-delay: 0.90s; }
 
+html, body {
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+}
+
+/* Ensure Twitter embeds and all iframes never exceed their container width */
+.twitter-tweet,
+.twitter-tweet-rendered,
+iframe[id^="twitter-widget-"],
+.twitter-tweet iframe {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
 /* ─── Scroll Snap & FullPage System ─── */
 .fullpage-wrapper {
     height: 100vh;
@@ -104,6 +119,9 @@ input::-webkit-credentials-auto-fill-button {
     width: 100vw;
     overflow: hidden;
     position: relative;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    touch-action: none;
 }
 
 .fullpage-track {
@@ -119,12 +137,22 @@ input::-webkit-credentials-auto-fill-button {
     height: 100dvh;
     width: 100%;
     position: relative;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     justify-content: center;
     box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
 }
+
+@media (min-width: 768px) {
+    .fullpage-slide {
+        overflow: hidden;
+    }
+}
+
 
 /* Smooth child element transition classes */
 .slide-elem {

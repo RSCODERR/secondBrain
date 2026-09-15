@@ -54,7 +54,7 @@ function DashBoard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/70">
+    <div className="min-h-screen bg-slate-50/70 w-full max-w-full overflow-x-hidden">
       <SideBar
         onSelect={setFilterType}
         selectedType={filterType}
@@ -62,7 +62,7 @@ function DashBoard() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="ml-0 lg:ml-72 min-h-screen p-4 sm:p-6 lg:p-8 transition-all duration-300">
+      <div className="ml-0 lg:ml-72 min-h-screen p-4 md:p-6 lg:p-8 transition-all duration-300 min-w-0 max-w-full overflow-x-hidden">
         {/* Mobile & Tablet Header Bar */}
         <header className="lg:hidden flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -110,73 +110,41 @@ function DashBoard() {
         />
 
         {/* Action Controls & Search Bar */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
-            
-            {/* Title / Active Category Filter */}
-            <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 mb-6">
+
+          {/* Title + Action Buttons: Stacked on mobile (<sm), Row on tablet/desktop (sm+) */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+            <div className="flex items-center gap-2.5 min-w-0">
               {filterType ? (
-                <div className="flex items-center gap-2 bg-[#2d4a31]/10 text-[#2d4a31] px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold border border-[#2d4a31]/20">
-                  <span>Showing: <strong className="capitalize">{filterType}</strong></span>
+                <div className="flex items-center gap-2 bg-[#2d4a31]/10 text-[#2d4a31] px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold border border-[#2d4a31]/20 min-w-0">
+                  <span className="truncate">Showing: <strong className="capitalize">{filterType}</strong></span>
                   <button
                     onClick={() => setFilterType(null)}
-                    className="cursor-pointer hover:text-[#1c2b1e] font-bold ml-1 text-sm leading-none"
+                    className="cursor-pointer hover:text-[#1c2b1e] font-bold ml-0.5 text-sm leading-none shrink-0"
                     title="Clear filter"
                   >
                     ✕
                   </button>
                 </div>
               ) : (
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight shrink-0">
                   All Notes
                 </h1>
               )}
-              <span className="text-xs text-stone-500 font-medium bg-stone-200/70 px-2.5 py-1 rounded-full">
+              <span className="text-xs text-stone-500 font-medium bg-stone-200/70 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
                 {filteredContents.length} {filteredContents.length === 1 ? "item" : "items"}
               </span>
             </div>
 
-            {/* Center Search Box */}
-            <div className="relative flex-1 max-w-md w-full">
-              <input
-                type="text"
-                placeholder="Search notes, videos, tweets..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d4a31]/25 focus:border-[#2d4a31] shadow-xs text-stone-800 placeholder:text-stone-400 transition-all"
-              />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 rounded-full hover:bg-stone-100 cursor-pointer transition-colors"
-                  title="Clear search"
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+            {/* Action Buttons: 50/50 flex-1 on mobile, auto-width on tablet/desktop */}
+            <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
               <Button
                 varient="secondary"
                 size="md"
                 startIcon={<ShareIcon size="md" />}
                 text="Share Brain"
                 onClick={() => setShareOpen(true)}
-                className="flex-1 lg:flex-initial"
+                className="flex-1 sm:flex-initial"
               />
 
               <Button
@@ -185,23 +153,47 @@ function DashBoard() {
                 startIcon={<PlusIcon size="md" />}
                 text="Add Content"
                 onClick={() => setModalOpen(true)}
-                className="flex-1 lg:flex-initial"
-              />
-
-              <Button
-                varient="danger"
-                size="md"
-                startIcon={<LogoutIcon size="md" />}
-                text="Logout"
-                onClick={logout}
-                className="hidden lg:inline-flex"
+                className="flex-1 sm:flex-initial"
               />
             </div>
           </div>
+
+          {/* Row 2: Search bar (full width on mobile/tablet, comfortably spaced) */}
+          <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Search notes, videos, tweets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2.5 text-sm bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d4a31]/25 focus:border-[#2d4a31] shadow-xs text-stone-800 placeholder:text-stone-400 transition-all"
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 rounded-full hover:bg-stone-100 cursor-pointer transition-colors"
+                title="Clear search"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
         </div>
 
         {/* Content Cards Grid */}
-        <div className="mt-6">
+        <div>
           {loading && (
             <div className="w-full py-20 flex justify-center items-center">
               <LoaderIcon />
@@ -215,7 +207,7 @@ function DashBoard() {
           )}
 
           {!loading && !error && filteredContents.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6 w-full min-w-0">
               {filteredContents.map(({ _id, type, link, title, note }) => (
                 <Card
                   key={_id}

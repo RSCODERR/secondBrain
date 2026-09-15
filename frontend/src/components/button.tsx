@@ -35,7 +35,7 @@ const sizeStyles = {
 }
 
 const defaultStyles =
-  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight shrink-0 box-border"
+  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight box-border min-w-0"
 
 export const Button = (props: ButtonProps) => {
   return (
@@ -58,7 +58,7 @@ export const Button = (props: ButtonProps) => {
         </span>
       )}
 
-      <span className={`inline-flex items-center justify-center gap-2 whitespace-nowrap ${props.loading ? "opacity-0" : ""}`}>
+      <span className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap min-w-0 ${props.loading ? "opacity-0" : ""}`}>
         {props.startIcon && <span className="shrink-0 flex items-center justify-center">{props.startIcon}</span>}
         <span className="truncate">{props.text}</span>
         {props.endIcon && <span className="shrink-0 flex items-center justify-center">{props.endIcon}</span>}
@@ -66,3 +66,4 @@ export const Button = (props: ButtonProps) => {
     </button>
   )
 }
+
