@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Vibrant Emerald Gradient for Light Chrome -->
+    <linearGradient id="sbEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+
+    <!-- Neon Mint-to-Emerald Gradient for Dark Chrome -->
+    <linearGradient id="sbNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7" />
+      <stop offset="50%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <style>
+    .brain-mark {
+      stroke: url(#sbEmerald);
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    @media (prefers-color-scheme: dark) {
+      .brain-mark {
+        stroke: url(#sbNeon);
+        filter: drop-shadow(0 0 1px rgba(52, 211, 153, 0.7));
+      }
+    }
+  </style>
+
+  <!-- Central Fissure -->
+  <path class="brain-mark" d="M12 18V5" />
+
+  <!-- Central Synapse Interconnect -->
+  <path class="brain-mark" d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" />
+
+  <!-- Frontal Lobes -->
+  <path class="brain-mark" d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" />
+
+  <!-- Upper Right Parietal Lobe -->
+  <path class="brain-mark" d="M17.997 5.125a4 4 0 0 1 2.526 5.77" />
+
+  <!-- Lower Right Temporal Lobe -->
+  <path class="brain-mark" d="M18 18a4 4 0 0 0 2-7.464" />
+
+  <!-- Inferior Base / Cerebellum -->
+  <path class="brain-mark" d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" />
+
+  <!-- Lower Left Temporal Lobe -->
+  <path class="brain-mark" d="M6 18a4 4 0 0 1-2-7.464" />
+
+  <!-- Upper Left Parietal Lobe -->
+  <path class="brain-mark" d="M6.003 5.125a4 4 0 0 0-2.526 5.77" />
+</svg>
