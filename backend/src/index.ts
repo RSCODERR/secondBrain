@@ -65,7 +65,7 @@ app.post("/api/v1/signup", async (req, res) => {
 })
 
 app.post("/api/v1/signin", async (req, res) => {
-     const {username, password} = req.body;
+     const {username, password, rememberMe} = req.body;
      if(!username || !password){
        return res.status(500).json({
         msg: "Username and password are required"
@@ -88,16 +88,32 @@ app.post("/api/v1/signin", async (req, res) => {
         })
      }
 
-     const token = jwt.sign({ id: user.id, username: user.username}, process.env.JWT_SECRET!,{expiresIn: "10d"});
+     // If rememberMe is true, token lives 7 days and cookie persists.
+     // If false, token lives for the session and cookie has no maxAge (session cookie).
+     const tokenExpiry = rememberMe ? "7d" : "1d";
+     const token = jwt.sign({ id: user.id, username: user.username}, process.env.JWT_SECRET!,{expiresIn: tokenExpiry});
 
      const isProduction = process.env.NODE_ENV === "production";
 
-     res.cookie("token", token, {
+     interface CookieOpts {
+       httpOnly: boolean;
+       secure: boolean;
+       sameSite: "none" | "lax" | "strict" | boolean;
+       maxAge?: number;
+     }
+
+     const cookieOptions: CookieOpts = {
       httpOnly: true,
       secure: isProduction,        
-      sameSite: isProduction ? "none" : "lax",    
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+      sameSite: isProduction ? "none" : "lax",
+     };
+
+     // Only set maxAge (persistent cookie) when rememberMe is explicitly true
+     if (rememberMe) {
+       cookieOptions.maxAge = 7 * 24 * 60 * 60 * 1000;
+     }
+
+     res.cookie("token", token, cookieOptions);
 
      res.status(200).json({
         msg: "Logged in successfully",
@@ -379,6 +395,96 @@ app.get("/api/v1/card/:id", async (req, res) => {
 });
 
 
+
+// Check if a username is available
+app.get("/api/v1/check-username", async (req, res) => {
+    try {
+        const username = (req.query.username as string || "").trim().toLowerCase();
+
+        if (!username || username.length < 4 || username.length > 25) {
+            return res.status(400).json({ available: false, error: "Username must be 4-25 characters" });
+        }
+
+        const existing = await User.findOne({ username });
+        return res.json({ available: !existing });
+    } catch (error) {
+        return res.status(500).json({ available: false, error: "Server error" });
+    }
+});
+
+// Change the authenticated user's username
+app.put("/api/v1/user/username", userMiddleware, async (req, res) => {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+        const { newUsername } = req.body;
+
+        if (!newUsername || typeof newUsername !== "string") {
+            return res.status(400).json({ error: "New username is required" });
+        }
+
+        const trimmed = newUsername.trim().toLowerCase();
+
+        if (trimmed.length < 4 || trimmed.length > 25) {
+            return res.status(400).json({ error: "Username must be 4-25 characters" });
+        }
+
+        // Check if already taken by someone else
+        const existing = await User.findOne({ username: trimmed });
+        if (existing && existing._id.toString() !== userId) {
+            return res.status(409).json({ error: "Username already taken" });
+        }
+
+        await User.updateOne({ _id: userId }, { username: trimmed });
+
+        return res.json({ msg: "Username updated successfully", username: trimmed });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Delete the authenticated user's account (requires password confirmation)
+app.delete("/api/v1/user", userMiddleware, async (req, res) => {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ error: "Password is required to delete account" });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ error: "Incorrect password" });
+        }
+
+        // Delete all content belonging to this user
+        await content.deleteMany({ userId });
+
+        // Delete the user
+        await User.deleteOne({ _id: userId });
+
+        // Clear auth cookie
+        const isProduction = process.env.NODE_ENV === "production";
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
+        });
+
+        return res.json({ msg: "Account deleted successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 // Health check endpoint that keeps Render awake and pings MongoDB Atlas
 app.get("/api/v1/health", async (_req, res) => {

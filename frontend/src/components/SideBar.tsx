@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BrainIcon } from "../icons/brainIcon";
 import { LinkIcon } from "../icons/linkIcon";
 import { NoteIcon } from "../icons/noteIcon";
@@ -6,6 +6,7 @@ import { TwitterIcon } from "../icons/twitterIcon";
 import { YoutubeIcon } from "../icons/youTubeIcon";
 import { CrossIcon } from "../icons/crossIcon";
 import { LogoutIcon } from "../icons/logoutIcon";
+import { SettingsIcon } from "../icons/settingsIcon";
 import { SidebarItems } from "./SidebarItem";
 import { useAuth } from "../context/AuthContext";
 
@@ -20,6 +21,7 @@ interface SideBarProps {
 
 export function SideBar(props: SideBarProps) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleCategoryClick = (type: "twitter" | "youtube" | "link" | "note") => {
     if (props.selectedType === type) {
@@ -114,6 +116,19 @@ export function SideBar(props: SideBarProps) {
               Signed in as <span className="font-semibold text-gray-800">@{user.username}</span>
             </div>
           )}
+
+          {/* Settings link */}
+          <button
+            onClick={() => {
+              navigate("/settings");
+              props.onClose?.();
+            }}
+            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors font-medium cursor-pointer border border-transparent hover:border-gray-200 group"
+          >
+            <SettingsIcon size="md" />
+            <span className="text-sm font-semibold">Account Settings</span>
+          </button>
+
           <button
             onClick={() => {
               logout();

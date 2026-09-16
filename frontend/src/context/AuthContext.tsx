@@ -13,6 +13,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   checkAuth: () => Promise<boolean>;
   logout: () => Promise<void>;
+  updateUsername: (newUsername: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,6 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Optimistically update the displayed username in context after a successful change
+  const updateUsername = (newUsername: string) => {
+    setUser((prev) => prev ? { ...prev, username: newUsername } : prev);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -71,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         checkAuth,
         logout,
+        updateUsername,
       }}
     >
       {children}

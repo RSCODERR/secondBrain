@@ -46,6 +46,7 @@ export function SignIn() {
         {
           username: trimmedUsername,
           password: password,
+          rememberMe: rememberMe,
         },
         { withCredentials: true }
       );
