@@ -9,13 +9,15 @@ import ShareView from "./pages/shareview"
 import ShareCardView from "./pages/shareCardView"
 import Settings from "./pages/settings"
 import { AuthProvider } from "./context/AuthContext"
+import { ThemeProvider } from "./context/ThemeContext"
 import { ProtectedRoute, PublicOnlyRoute } from "./components/RouteGuards"
 
 function App() {
   return (
-    <AuthProvider>
-      <Analytics />
-      <SpeedInsights />
+    <ThemeProvider>
+      <AuthProvider>
+        <Analytics />
+        <SpeedInsights />
       <Routes>
         <Route
           path="/signup"
@@ -60,7 +62,8 @@ function App() {
         <Route path="/share/:shareLink" element={<ShareView />} />
         <Route path="/share/card/:id" element={<ShareCardView />} />
       </Routes>
-    </AuthProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

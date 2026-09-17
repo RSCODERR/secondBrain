@@ -10,6 +10,7 @@ import { TwitterIcon } from "../icons/twitterIcon"
 import { YoutubeIcon } from "../icons/youTubeIcon"
 import { LinkIcon } from "../icons/linkIcon"
 import { NoteIcon } from "../icons/noteIcon"
+import { LandingThemeToggle } from "../components/LandingThemeToggle"
 
 type FilterType = "all" | "youtube" | "twitter" | "link" | "note"
 
@@ -73,22 +74,22 @@ export default function ShareView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-50">
+      <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-50 dark:bg-[#0b110d] transition-colors">
         <LoaderIcon />
-        <p className="mt-4 text-sm text-gray-500 animate-pulse">Loading shared brain...</p>
+        <p className="mt-4 text-sm text-gray-500 dark:text-zinc-400 animate-pulse">Loading shared brain...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-zinc-100 flex flex-col justify-center items-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center max-w-md w-full">
-          <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+      <div className="min-h-screen bg-zinc-100 dark:bg-[#0b110d] flex flex-col justify-center items-center p-4 transition-colors">
+        <div className="bg-white dark:bg-[#121c15] p-8 rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 text-center max-w-md w-full">
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-950/60 text-red-500 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
             !
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Brain Not Found</h2>
-          <p className="text-gray-500 text-sm mb-6">{error}</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Brain Not Found</h2>
+          <p className="text-gray-500 dark:text-zinc-400 text-sm mb-6">{error}</p>
           <Link to="/">
             <Button text="Go to Homepage" varient="primary" size="md" fullWidth />
           </Link>
@@ -100,17 +101,18 @@ export default function ShareView() {
   const userInitial = username ? username.charAt(0).toUpperCase() : "U"
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-zinc-100 dark:bg-[#0b110d] flex flex-col text-gray-900 dark:text-zinc-100 transition-colors duration-200">
       {/* Top Navbar */}
-      <nav className="flex justify-between items-center px-4 sm:px-8 py-4 bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
-        <Link to="/" className="flex items-center gap-2.5 text-xl font-bold text-gray-900">
-          <span className="text-purple-600">
+      <nav className="flex justify-between items-center px-4 sm:px-8 py-3.5 bg-white/95 dark:bg-[#0e1610]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 sticky top-0 z-30 shadow-xs transition-colors">
+        <Link to="/" className="flex items-center gap-2.5 text-xl font-bold text-gray-900 dark:text-white">
+          <span className="text-[#2d4a31] dark:text-emerald-400">
             <BrainIcon />
           </span>
           <span>Second Brain</span>
         </Link>
 
         <div className="flex items-center gap-3">
+          <LandingThemeToggle />
           <Link to="/signin" className="hidden sm:block">
             <Button text="Login" size="sm" varient="secondary" />
           </Link>
@@ -121,23 +123,23 @@ export default function ShareView() {
       </nav>
 
       {/* Profile Header Banner */}
-      <header className="bg-white border-b border-gray-200 py-8 px-4 sm:px-8 shadow-xs">
+      <header className="bg-white dark:bg-[#121c15] border-b border-gray-200 dark:border-white/5 py-8 px-4 sm:px-8 shadow-xs transition-colors">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-linear-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold shadow-md shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-linear-to-tr from-[#2d4a31] to-[#48734e] dark:from-emerald-700 dark:to-emerald-500 flex items-center justify-center text-white text-2xl font-bold shadow-md shrink-0">
               {userInitial}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase font-bold tracking-wider text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                <span className="text-xs uppercase font-bold tracking-wider text-[#2d4a31] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
                   Shared Brain
                 </span>
-                <span className="text-xs text-gray-400">Read-only</span>
+                <span className="text-xs text-gray-400 dark:text-zinc-500">Read-only</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mt-1">
                 {username}'s Second Brain
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
                 Exploring {contents.length} saved {contents.length === 1 ? "memory" : "memories"}
               </p>
             </div>
@@ -146,22 +148,22 @@ export default function ShareView() {
           {/* Type stats chips */}
           <div className="flex flex-wrap items-center gap-2">
             {counts.note > 0 && (
-              <span className="inline-flex items-center gap-1.5 bg-zinc-50 border border-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-[#16231a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-emerald-200 text-xs px-3 py-1.5 rounded-lg font-medium">
                 <NoteIcon /> {counts.note} {counts.note === 1 ? "Note" : "Notes"}
               </span>
             )}
             {counts.youtube > 0 && (
-              <span className="inline-flex items-center gap-1.5 bg-zinc-50 border border-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-[#16231a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-emerald-200 text-xs px-3 py-1.5 rounded-lg font-medium">
                 <YoutubeIcon /> {counts.youtube} {counts.youtube === 1 ? "Video" : "Videos"}
               </span>
             )}
             {counts.twitter > 0 && (
-              <span className="inline-flex items-center gap-1.5 bg-zinc-50 border border-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-[#16231a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-emerald-200 text-xs px-3 py-1.5 rounded-lg font-medium">
                 <TwitterIcon /> {counts.twitter} {counts.twitter === 1 ? "Tweet" : "Tweets"}
               </span>
             )}
             {counts.link > 0 && (
-              <span className="inline-flex items-center gap-1.5 bg-zinc-50 border border-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-lg font-medium">
+              <span className="inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-[#16231a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-emerald-200 text-xs px-3 py-1.5 rounded-lg font-medium">
                 <LinkIcon /> {counts.link} {counts.link === 1 ? "Link" : "Links"}
               </span>
             )}
@@ -179,8 +181,8 @@ export default function ShareView() {
               onClick={() => setFilter("all")}
               className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer ${
                 filter === "all"
-                  ? "bg-purple-600 text-white shadow-xs"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  ? "bg-[#2d4a31] dark:bg-emerald-600 text-white shadow-xs"
+                  : "bg-white dark:bg-[#141f17] text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-[#1a2b20] border border-gray-200 dark:border-white/10"
               }`}
             >
               All ({counts.all})
@@ -191,8 +193,8 @@ export default function ShareView() {
                 onClick={() => setFilter("note")}
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   filter === "note"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    ? "bg-[#2d4a31] dark:bg-emerald-600 text-white shadow-xs"
+                    : "bg-white dark:bg-[#141f17] text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-[#1a2b20] border border-gray-200 dark:border-white/10"
                 }`}
               >
                 <NoteIcon /> Notes ({counts.note})
@@ -204,8 +206,8 @@ export default function ShareView() {
                 onClick={() => setFilter("youtube")}
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   filter === "youtube"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    ? "bg-[#2d4a31] dark:bg-emerald-600 text-white shadow-xs"
+                    : "bg-white dark:bg-[#141f17] text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-[#1a2b20] border border-gray-200 dark:border-white/10"
                 }`}
               >
                 <YoutubeIcon /> YouTube ({counts.youtube})
@@ -217,8 +219,8 @@ export default function ShareView() {
                 onClick={() => setFilter("twitter")}
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   filter === "twitter"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    ? "bg-[#2d4a31] dark:bg-emerald-600 text-white shadow-xs"
+                    : "bg-white dark:bg-[#141f17] text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-[#1a2b20] border border-gray-200 dark:border-white/10"
                 }`}
               >
                 <TwitterIcon /> Twitter ({counts.twitter})
@@ -230,8 +232,8 @@ export default function ShareView() {
                 onClick={() => setFilter("link")}
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer flex items-center gap-1.5 ${
                   filter === "link"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    ? "bg-[#2d4a31] dark:bg-emerald-600 text-white shadow-xs"
+                    : "bg-white dark:bg-[#141f17] text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-[#1a2b20] border border-gray-200 dark:border-white/10"
                 }`}
               >
                 <LinkIcon /> Links ({counts.link})
@@ -246,7 +248,7 @@ export default function ShareView() {
               placeholder="Search in this brain..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-9 pr-3 py-1.5 text-sm bg-white dark:bg-[#141f17] border border-gray-300 dark:border-white/10 rounded-lg text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#2d4a31] dark:focus:ring-emerald-500"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -254,7 +256,7 @@ export default function ShareView() {
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
@@ -277,10 +279,10 @@ export default function ShareView() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center max-w-md mx-auto my-12">
-            <div className="text-gray-400 text-4xl mb-3">🔍</div>
-            <h3 className="text-base font-semibold text-gray-800 mb-1">No matching content</h3>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white dark:bg-[#121c15] rounded-2xl border border-gray-200 dark:border-white/10 p-12 text-center max-w-md mx-auto my-12">
+            <div className="text-gray-400 dark:text-zinc-500 text-4xl mb-3">🔍</div>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-1">No matching content</h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
               {searchQuery
                 ? `No memories found matching "${searchQuery}"`
                 : "No items in this category"}
@@ -291,7 +293,7 @@ export default function ShareView() {
                   setFilter("all")
                   setSearchQuery("")
                 }}
-                className="text-xs font-semibold text-purple-600 hover:underline cursor-pointer"
+                className="text-xs font-semibold text-[#2d4a31] dark:text-emerald-400 hover:underline cursor-pointer"
               >
                 Reset filters
               </button>
@@ -300,11 +302,11 @@ export default function ShareView() {
         )}
 
         {/* Footer CTA Banner */}
-        <section className="mt-16 bg-linear-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-6 sm:p-10 text-center shadow-lg">
+        <section className="mt-16 bg-linear-to-r from-[#2d4a31] to-[#3b6140] dark:from-[#132819] dark:to-[#1a3823] dark:border dark:border-emerald-800/30 text-white rounded-2xl p-6 sm:p-10 text-center shadow-lg">
           <h2 className="text-2xl sm:text-3xl font-bold">
             Create Your Own Second Brain
           </h2>
-          <p className="mt-2 text-purple-100 text-sm sm:text-base max-w-xl mx-auto">
+          <p className="mt-2 text-emerald-100 dark:text-emerald-200 text-sm sm:text-base max-w-xl mx-auto">
             Organize tweets, YouTube videos, websites, and personal notes all in one place.
           </p>
           <div className="mt-6 flex justify-center">

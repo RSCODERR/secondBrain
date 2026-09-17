@@ -38,12 +38,12 @@ export function Input({
         name={name}
         autoFocus={autoFocus}
         type={isPassword && !showpassword ? "password" : "text"}
-        className={`w-full px-4 py-2.5 text-sm sm:text-base text-gray-900 bg-white border rounded-xl transition-all duration-200 placeholder:text-gray-400 focus:outline-none focus:ring-4 ${
+        className={`w-full px-4 py-2.5 text-sm sm:text-base text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0f1712] border rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-4 ${
           isPassword ? "pr-11" : ""
         } ${
           error
-            ? "border-red-400 focus:border-red-500 focus:ring-red-500/15"
-            : "border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-purple-500/10 shadow-xs"
+            ? "border-red-400 dark:border-red-500/80 focus:border-red-500 focus:ring-red-500/15"
+            : "border-stone-200 dark:border-emerald-900/60 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-emerald-500/15 shadow-xs"
         }`}
       />
 
@@ -51,7 +51,7 @@ export function Input({
         <button
           type="button"
           onClick={() => setShowpassword(!showpassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-gray-400 hover:text-gray-600 focus:outline-none transition-colors cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-stone-400 hover:text-stone-600 dark:text-stone-400 dark:hover:text-stone-200 focus:outline-none transition-colors cursor-pointer"
           aria-label={showpassword ? "Hide password" : "Show password"}
         >
           {showpassword ? <EyeoffIcon /> : <EyeopenIcon />}

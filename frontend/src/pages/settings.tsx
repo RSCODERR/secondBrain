@@ -3,11 +3,15 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { BrainIcon } from "../icons/brainIcon";
 import { MenuIcon } from "../icons/menuIcon";
 import { LogoutIcon } from "../icons/logoutIcon";
 import { EyeopenIcon } from "../icons/eyeopenIcon";
 import { EyeoffIcon } from "../icons/eyeoffIcon";
+import { SunIcon } from "../icons/sunIcon";
+import { MoonIcon } from "../icons/moonIcon";
+import { SystemIcon } from "../icons/systemIcon";
 import "../App.css";
 
 /* ─── tiny helper: debounce ─── */
@@ -25,6 +29,7 @@ type AvailStatus = "idle" | "checking" | "available" | "taken" | "self" | "error
 
 export default function Settings() {
   const { user, logout, updateUsername } = useAuth();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   /* ── sidebar open state (mobile) ── */
@@ -176,15 +181,15 @@ export default function Settings() {
 
     if (usernameStatus === "checking") {
       return (
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500">
-          <span className="w-3.5 h-3.5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin inline-block" />
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">
+          <span className="w-3.5 h-3.5 border-2 border-stone-400 dark:border-emerald-500 border-t-transparent rounded-full animate-spin inline-block" />
           Checking…
         </span>
       );
     }
     if (usernameStatus === "available") {
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
@@ -194,7 +199,7 @@ export default function Settings() {
     }
     if (usernameStatus === "taken") {
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-500">
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 dark:text-red-400">
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -204,25 +209,25 @@ export default function Settings() {
     }
     if (usernameStatus === "self") {
       return (
-        <span className="text-xs text-stone-400 font-medium">That's your current username</span>
+        <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">That's your current username</span>
       );
     }
     return null;
   }, [newUsername, usernameStatus]);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 w-full">
+    <div className="min-h-screen bg-slate-50/70 dark:bg-[#0b110d] text-stone-800 dark:text-stone-100 w-full transition-colors duration-200">
       {/* ── Mobile sidebar backdrop ── */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-xs z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* ── Sidebar ── */}
       <aside
-        className={`h-screen bg-white border-r-2 border-gray-200 w-72 fixed left-0 top-0 px-5 py-6 z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`h-screen bg-white dark:bg-[#0c120e] border-r border-stone-200 dark:border-emerald-950/70 w-72 fixed left-0 top-0 px-5 py-6 z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:shadow-none"
         }`}
       >
@@ -232,12 +237,12 @@ export default function Settings() {
               to="/dashboard"
               className="flex items-center gap-3 hover:cursor-pointer select-none"
             >
-              <div className="text-purple-600"><BrainIcon /></div>
-              <div className="font-semibold text-gray-900">Second Brain</div>
+              <div className="text-[#2d4a31] dark:text-emerald-400"><BrainIcon /></div>
+              <div className="font-semibold text-stone-900 dark:text-stone-100">Second Brain</div>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-2 text-gray-500 hover:text-gray-900 lg:hidden cursor-pointer"
+              className="p-2 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white lg:hidden cursor-pointer rounded-lg hover:bg-stone-100 dark:hover:bg-[#142017]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -249,9 +254,9 @@ export default function Settings() {
             <Link
               to="/dashboard"
               onClick={() => setSidebarOpen(false)}
-              className="flex gap-4 py-2 cursor-pointer rounded-md px-3 transition-all duration-200 ease-in-out text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
+              className="flex items-center gap-3.5 py-2.5 cursor-pointer rounded-xl px-3.5 transition-all duration-200 ease-in-out text-stone-700 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-[#142017] dark:hover:text-emerald-200 text-sm font-medium"
             >
-              <svg className="w-5 h-5 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
                 <rect x="3" y="3" width="7" height="7" rx="1" />
                 <rect x="14" y="3" width="7" height="7" rx="1" />
                 <rect x="14" y="14" width="7" height="7" rx="1" />
@@ -261,8 +266,8 @@ export default function Settings() {
             </Link>
 
             {/* Settings — active */}
-            <div className="flex gap-4 py-2 cursor-default rounded-md px-3 bg-purple-100 text-purple-700 font-medium">
-              <svg className="w-5 h-5 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+            <div className="flex items-center gap-3.5 py-2.5 cursor-default rounded-xl px-3.5 bg-[#2d4a31]/10 text-[#2d4a31] dark:bg-emerald-950/70 dark:text-emerald-300 border border-[#2d4a31]/20 dark:border-emerald-800/60 font-semibold text-sm shadow-xs">
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
@@ -272,18 +277,18 @@ export default function Settings() {
         </div>
 
         {/* Bottom: user info + logout */}
-        <div className="border-t border-gray-200 pt-4 flex flex-col gap-2">
+        <div className="border-t border-stone-200 dark:border-emerald-950/70 pt-4 flex flex-col gap-2.5">
           {user && (
-            <div className="px-3 py-1 text-xs text-gray-500 truncate">
-              Signed in as <span className="font-semibold text-gray-800">@{user.username}</span>
+            <div className="px-3 py-0.5 text-xs text-stone-500 dark:text-stone-400 truncate">
+              Signed in as <span className="font-semibold text-stone-800 dark:text-emerald-300">@{user.username}</span>
             </div>
           )}
           <button
             onClick={() => { logout(); }}
-            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors font-medium cursor-pointer border border-transparent hover:border-red-200"
+            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-300 transition-colors font-medium cursor-pointer border border-transparent hover:border-red-200 dark:hover:border-red-900/40 text-sm"
           >
             <LogoutIcon size="md" />
-            <span className="text-sm font-semibold">Log out</span>
+            <span className="font-semibold">Log out</span>
           </button>
         </div>
       </aside>
@@ -291,67 +296,154 @@ export default function Settings() {
       {/* ── Main content ── */}
       <div className="ml-0 lg:ml-72 min-h-screen p-4 md:p-6 lg:p-8 transition-all duration-300">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+        <header className="lg:hidden flex items-center justify-between pb-4 mb-4 border-b border-stone-200 dark:border-emerald-950/70">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 cursor-pointer shadow-xs transition"
+              className="p-2 rounded-lg bg-white dark:bg-[#142017] border border-stone-200 dark:border-emerald-900/60 hover:bg-stone-50 dark:hover:bg-[#1b2b20] text-stone-700 dark:text-stone-200 cursor-pointer shadow-xs transition"
               aria-label="Open Navigation Menu"
             >
               <MenuIcon size="md" />
             </button>
-            <div className="flex items-center gap-2 text-xl font-bold text-gray-900 select-none">
-              <span className="text-[#2d4a31]"><BrainIcon /></span>
+            <div className="flex items-center gap-2 text-xl font-bold text-stone-900 dark:text-stone-100 select-none">
+              <span className="text-[#2d4a31] dark:text-emerald-400"><BrainIcon /></span>
               <span>Second Brain</span>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-red-50 text-red-600 cursor-pointer shadow-xs transition"
-            aria-label="Logout"
-          >
-            <LogoutIcon size="md" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={logout}
+              className="p-2 rounded-lg bg-white dark:bg-[#142017] border border-stone-200 dark:border-emerald-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 cursor-pointer shadow-xs transition"
+              aria-label="Logout"
+            >
+              <LogoutIcon size="md" />
+            </button>
+          </div>
         </header>
 
         {/* Page heading */}
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Account Settings</h1>
-          <p className="text-sm text-stone-500 mt-1">
-            Manage your account details and preferences
+          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100 tracking-tight">Account Settings</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+            Manage your account details and appearance preferences
           </p>
         </div>
 
         <div className="max-w-2xl flex flex-col gap-5">
 
           {/* ── Current account info card ── */}
-          <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#2d4a31]/10 border border-[#2d4a31]/20 flex items-center justify-center text-[#2d4a31] font-bold text-lg shrink-0">
+          <div className="bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/70 rounded-2xl p-5 shadow-xs flex items-center gap-4 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-[#2d4a31]/10 dark:bg-emerald-950/70 border border-[#2d4a31]/20 dark:border-emerald-800/60 flex items-center justify-center text-[#2d4a31] dark:text-emerald-300 font-bold text-lg shrink-0">
               {user?.username?.charAt(0).toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0">
-              <div className="text-base font-semibold text-gray-900 truncate">@{user?.username}</div>
-              <div className="text-xs text-stone-500 mt-0.5">Your Second Brain account</div>
+              <div className="text-base font-semibold text-stone-900 dark:text-stone-100 truncate">@{user?.username}</div>
+              <div className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Your Second Brain account</div>
+            </div>
+          </div>
+
+          {/* ══════════════════════════════
+               Appearance & Theme card
+          ══════════════════════════════ */}
+          <div className="bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/70 rounded-2xl shadow-xs overflow-hidden transition-colors">
+            <div className="px-5 py-4 border-b border-stone-100 dark:border-emerald-950/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Appearance & Theme</h2>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Choose your interface theme or sync with system preferences</p>
+              </div>
+              <span className="self-start sm:self-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-[#2d4a31]/10 dark:bg-emerald-950/60 text-[#2d4a31] dark:text-emerald-300 border border-[#2d4a31]/20 dark:border-emerald-800/60">
+                Current: {theme === "system" ? `System (${resolvedTheme === "dark" ? "Dark" : "Light"})` : theme === "dark" ? "Dark" : "Light"}
+              </span>
+            </div>
+
+            <div className="p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {/* Option 1: Light */}
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={`group/btn relative flex flex-col text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    theme === "light"
+                      ? "border-[#2d4a31] ring-2 ring-[#2d4a31]/20 bg-stone-50/90 shadow-xs"
+                      : "border-stone-200 dark:border-emerald-900/40 bg-white dark:bg-[#0e1611] hover:border-stone-300 dark:hover:border-emerald-700/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shadow-2xs">
+                      <SunIcon size="md" />
+                    </div>
+                    {theme === "light" && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#2d4a31]" />
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">Light Mode</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Dark green & crisp white</span>
+                </button>
+
+                {/* Option 2: Dark */}
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  className={`group/btn relative flex flex-col text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    theme === "dark"
+                      ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-950/40 shadow-xs"
+                      : "border-stone-200 dark:border-emerald-900/40 bg-white dark:bg-[#0e1611] hover:border-stone-300 dark:hover:border-emerald-700/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-900/50 text-emerald-400 border border-emerald-700/40 flex items-center justify-center shadow-2xs">
+                      <MoonIcon size="md" />
+                    </div>
+                    {theme === "dark" && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">Dark Mode</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Obsidian emerald & glowing mint</span>
+                </button>
+
+                {/* Option 3: System */}
+                <button
+                  type="button"
+                  onClick={() => setTheme("system")}
+                  className={`group/btn relative flex flex-col text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    theme === "system"
+                      ? "border-[#2d4a31] dark:border-emerald-500 ring-2 ring-[#2d4a31]/20 dark:ring-emerald-500/20 bg-stone-50/90 dark:bg-emerald-950/40 shadow-xs"
+                      : "border-stone-200 dark:border-emerald-900/40 bg-white dark:bg-[#0e1611] hover:border-stone-300 dark:hover:border-emerald-700/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-[#19271e] text-stone-700 dark:text-emerald-300 border border-stone-200 dark:border-emerald-800/40 flex items-center justify-center shadow-2xs">
+                      <SystemIcon size="md" />
+                    </div>
+                    {theme === "system" && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#2d4a31] dark:bg-emerald-400" />
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">System Sync</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Automatically syncs with OS</span>
+                </button>
+              </div>
             </div>
           </div>
 
           {/* ══════════════════════════════
                Change Username card
           ══════════════════════════════ */}
-          <div className="bg-white border border-stone-200 rounded-2xl shadow-xs overflow-hidden">
-            <div className="px-5 py-4 border-b border-stone-100">
-              <h2 className="text-base font-semibold text-gray-800">Change Username</h2>
-              <p className="text-xs text-stone-500 mt-0.5">Pick a new unique username for your account</p>
+          <div className="bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/70 rounded-2xl shadow-xs overflow-hidden transition-colors">
+            <div className="px-5 py-4 border-b border-stone-100 dark:border-emerald-950/60">
+              <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">Change Username</h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Pick a new unique username for your account</p>
             </div>
             <div className="px-5 py-5 flex flex-col gap-4">
 
               {/* Input + badge */}
               <div>
-                <label className="block text-xs font-semibold text-stone-600 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-wider mb-1.5">
                   New Username
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500 pointer-events-none">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                     </svg>
@@ -367,7 +459,7 @@ export default function Settings() {
                     }}
                     placeholder={`Current: @${user?.username}`}
                     maxLength={25}
-                    className="w-full pl-10 pr-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-200 rounded-xl transition-all duration-200 placeholder:text-stone-400 hover:border-stone-300 focus:outline-none focus:border-[#4a7a50] focus:ring-4 focus:ring-[#4a7a50]/10 shadow-xs"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs"
                   />
                 </div>
                 {/* Availability badge */}
@@ -378,7 +470,7 @@ export default function Settings() {
 
               {/* Feedback messages */}
               {usernameError && (
-                <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl text-xs text-red-600 font-medium flex items-center gap-2 animate-fade-in-up">
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-2 animate-fade-in-up">
                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                     <circle cx="12" cy="12" r="10" /><path d="M12 8v4m0 4h.01" />
                   </svg>
@@ -386,7 +478,7 @@ export default function Settings() {
                 </div>
               )}
               {usernameSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs text-emerald-700 font-medium flex items-center gap-2 animate-fade-in-up">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2 animate-fade-in-up">
                   <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
@@ -399,7 +491,7 @@ export default function Settings() {
                 id="save-username-btn"
                 onClick={handleSaveUsername}
                 disabled={savingUsername || usernameStatus === "taken" || usernameStatus === "checking" || usernameStatus === "self" || !newUsername.trim()}
-                className="w-full sm:w-auto sm:self-start px-5 py-2.5 rounded-xl bg-[#2d4a31] hover:bg-[#243d28] text-white text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full sm:w-auto sm:self-start px-5 py-2.5 rounded-xl bg-[#2d4a31] hover:bg-[#243d28] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-[0_0_20px_rgba(16,185,129,0.25)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {savingUsername ? (
                   <span className="flex items-center gap-2">
@@ -416,16 +508,16 @@ export default function Settings() {
           {/* ══════════════════════════════
                Danger Zone card
           ══════════════════════════════ */}
-          <div className="bg-white border border-red-200 rounded-2xl shadow-xs overflow-hidden">
-            <div className="px-5 py-4 border-b border-red-100 bg-red-50/40">
-              <h2 className="text-base font-semibold text-red-700">Danger Zone</h2>
-              <p className="text-xs text-red-500 mt-0.5">These actions are permanent and cannot be undone</p>
+          <div className="bg-white dark:bg-[#141011] border border-red-200 dark:border-red-950/80 rounded-2xl shadow-xs overflow-hidden transition-colors">
+            <div className="px-5 py-4 border-b border-red-100 dark:border-red-950/70 bg-red-50/40 dark:bg-red-950/30">
+              <h2 className="text-base font-semibold text-red-700 dark:text-red-400">Danger Zone</h2>
+              <p className="text-xs text-red-500 dark:text-red-400/80 mt-0.5">These actions are permanent and cannot be undone</p>
             </div>
             <div className="px-5 py-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <div className="text-sm font-semibold text-gray-800">Delete Account</div>
-                  <div className="text-xs text-stone-500 mt-0.5">
+                  <div className="text-sm font-semibold text-stone-800 dark:text-stone-100">Delete Account</div>
+                  <div className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                     Permanently deletes your account and all saved content
                   </div>
                 </div>
@@ -433,7 +525,7 @@ export default function Settings() {
                   <button
                     id="delete-account-btn"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="shrink-0 px-4 py-2 rounded-xl border border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 hover:border-red-400 transition-all duration-200 cursor-pointer"
+                    className="shrink-0 px-4 py-2 rounded-xl border border-red-300 dark:border-red-800/80 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-950/50 hover:border-red-400 dark:hover:border-red-700 transition-all duration-200 cursor-pointer"
                   >
                     Delete Account
                   </button>
@@ -442,11 +534,11 @@ export default function Settings() {
 
               {/* Confirmation panel */}
               {showDeleteConfirm && (
-                <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-xl flex flex-col gap-3 animate-fade-in-up">
-                  <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                <div className="mt-5 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex flex-col gap-3 animate-fade-in-up">
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
                     ⚠ This cannot be undone
                   </p>
-                  <p className="text-sm text-red-600">
+                  <p className="text-sm text-red-600 dark:text-red-300">
                     Enter your password to permanently delete <strong>@{user?.username}</strong> and all associated content.
                   </p>
 
@@ -459,13 +551,13 @@ export default function Settings() {
                       value={deletePassword}
                       onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(null); }}
                       placeholder="Enter your password"
-                      className="w-full pl-4 pr-11 py-2.5 text-sm text-stone-900 bg-white border border-red-200 rounded-xl transition-all duration-200 placeholder:text-stone-400 focus:outline-none focus:border-red-400 focus:ring-4 focus:ring-red-400/10"
+                      className="w-full pl-4 pr-11 py-2.5 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-red-200 dark:border-red-900/60 rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:border-red-400 dark:focus:border-red-500 focus:ring-4 focus:ring-red-400/10"
                       onKeyDown={(e) => { if (e.key === "Enter") handleDeleteAccount(); }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowDeletePassword((v) => !v)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-1 rounded-lg transition-colors cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:text-stone-400 dark:hover:text-stone-200 p-1 rounded-lg transition-colors cursor-pointer"
                       aria-label={showDeletePassword ? "Hide password" : "Show password"}
                     >
                       {showDeletePassword ? <EyeoffIcon /> : <EyeopenIcon />}
@@ -473,7 +565,7 @@ export default function Settings() {
                   </div>
 
                   {deleteError && (
-                    <div className="p-3 bg-white border border-red-200 rounded-xl text-xs text-red-600 font-medium flex items-center gap-2 animate-fade-in-up">
+                    <div className="p-3 bg-white dark:bg-[#181112] border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-2 animate-fade-in-up">
                       <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                         <circle cx="12" cy="12" r="10" /><path d="M12 8v4m0 4h.01" />
                       </svg>
@@ -486,7 +578,7 @@ export default function Settings() {
                       id="cancel-delete-btn"
                       onClick={() => setShowDeleteConfirm(false)}
                       disabled={deletingAccount}
-                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-stone-200 text-stone-600 text-sm font-semibold hover:bg-stone-50 transition-all cursor-pointer disabled:opacity-50"
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-all cursor-pointer disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -494,7 +586,7 @@ export default function Settings() {
                       id="confirm-delete-btn"
                       onClick={handleDeleteAccount}
                       disabled={deletingAccount || !deletePassword}
-                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 text-white text-sm font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {deletingAccount ? (
                         <span className="flex items-center justify-center gap-2">

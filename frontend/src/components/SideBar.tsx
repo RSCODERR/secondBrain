@@ -42,14 +42,14 @@ export function SideBar(props: SideBarProps) {
       {/* Mobile / Tablet Backdrop Overlay */}
       {props.isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
           onClick={props.onClose}
         />
       )}
 
       {/* Sidebar Drawer */}
       <aside
-        className={`h-screen bg-white border-r-2 border-gray-200 w-72 fixed left-0 top-0 px-5 py-6 z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`h-screen bg-white dark:bg-[#0c120e] border-r border-stone-200 dark:border-emerald-950/70 w-72 fixed left-0 top-0 px-5 py-6 z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           props.isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:shadow-none"
         }`}
       >
@@ -60,10 +60,10 @@ export function SideBar(props: SideBarProps) {
               onClick={handleBrandClick}
               className="flex items-center gap-3 hover:cursor-pointer select-none"
             >
-              <div className="text-purple-600">
+              <div className="text-[#2d4a31] dark:text-emerald-400">
                 <BrainIcon />
               </div>
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-stone-900 dark:text-stone-100">
                 Second Brain
               </div>
             </Link>
@@ -71,7 +71,7 @@ export function SideBar(props: SideBarProps) {
             {/* Close button on mobile/tablet */}
             <button
               onClick={props.onClose}
-              className="p-2 text-gray-500 hover:text-gray-900 lg:hidden cursor-pointer"
+              className="p-2 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white lg:hidden cursor-pointer rounded-lg hover:bg-stone-100 dark:hover:bg-[#142017] transition-colors"
               aria-label="Close sidebar"
             >
               <CrossIcon size="md" />
@@ -110,10 +110,11 @@ export function SideBar(props: SideBarProps) {
         </div>
 
         {/* Bottom User Profile & Logout */}
-        <div className="border-t border-gray-200 pt-4 flex flex-col gap-2">
+        <div className="border-t border-stone-200 dark:border-emerald-950/70 pt-4 flex flex-col gap-2.5">
+
           {user && (
-            <div className="px-3 py-1 text-xs text-gray-500 truncate">
-              Signed in as <span className="font-semibold text-gray-800">@{user.username}</span>
+            <div className="px-3 py-0.5 text-xs text-stone-500 dark:text-stone-400 truncate">
+              Signed in as <span className="font-semibold text-stone-800 dark:text-emerald-300">@{user.username}</span>
             </div>
           )}
 
@@ -123,10 +124,10 @@ export function SideBar(props: SideBarProps) {
               navigate("/settings");
               props.onClose?.();
             }}
-            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors font-medium cursor-pointer border border-transparent hover:border-gray-200 group"
+            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#142017] hover:text-stone-900 dark:hover:text-emerald-200 transition-colors font-medium cursor-pointer border border-transparent hover:border-stone-200 dark:hover:border-emerald-900/50 group text-sm"
           >
             <SettingsIcon size="md" />
-            <span className="text-sm font-semibold">Account Settings</span>
+            <span className="font-semibold">Account Settings</span>
           </button>
 
           <button
@@ -134,10 +135,10 @@ export function SideBar(props: SideBarProps) {
               logout();
               props.onClose?.();
             }}
-            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors font-medium cursor-pointer border border-transparent hover:border-red-200 group"
+            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-300 transition-colors font-medium cursor-pointer border border-transparent hover:border-red-200 dark:hover:border-red-900/40 group text-sm"
           >
             <LogoutIcon size="md" />
-            <span className="text-sm font-semibold">Log out</span>
+            <span className="font-semibold">Log out</span>
           </button>
         </div>
       </aside>

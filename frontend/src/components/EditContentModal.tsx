@@ -33,32 +33,32 @@ const typeOptions = [
     label: "YouTube",
     description: "Video & Shorts",
     icon: <YoutubeIcon />,
-    activeClass: "border-red-500 bg-red-50/80 text-red-700 ring-2 ring-red-500/20 shadow-xs",
-    hoverClass: "hover:border-red-200 hover:bg-red-50/30",
+    activeClass: "border-red-500 bg-red-50/80 dark:bg-red-950/50 text-red-700 dark:text-red-300 ring-2 ring-red-500/20 shadow-xs",
+    hoverClass: "hover:border-red-200 hover:bg-red-50/30 dark:hover:bg-red-950/20",
   },
   {
     id: "twitter" as const,
     label: "Twitter",
     description: "Posts & Threads",
     icon: <TwitterIcon />,
-    activeClass: "border-sky-500 bg-sky-50/80 text-sky-700 ring-2 ring-sky-500/20 shadow-xs",
-    hoverClass: "hover:border-sky-200 hover:bg-sky-50/30",
+    activeClass: "border-sky-500 bg-sky-50/80 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 ring-2 ring-sky-500/20 shadow-xs",
+    hoverClass: "hover:border-sky-200 hover:bg-sky-50/30 dark:hover:bg-sky-950/20",
   },
   {
     id: "link" as const,
     label: "Link",
     description: "Web page & doc",
     icon: <LinkIcon />,
-    activeClass: "border-indigo-500 bg-indigo-50/80 text-indigo-700 ring-2 ring-indigo-500/20 shadow-xs",
-    hoverClass: "hover:border-indigo-200 hover:bg-indigo-50/30",
+    activeClass: "border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500/20 shadow-xs",
+    hoverClass: "hover:border-emerald-200 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20",
   },
   {
     id: "note" as const,
     label: "Note",
     description: "Thoughts & ideas",
     icon: <NoteIcon />,
-    activeClass: "border-purple-500 bg-purple-50/80 text-purple-700 ring-2 ring-purple-500/20 shadow-xs",
-    hoverClass: "hover:border-purple-200 hover:bg-purple-50/30",
+    activeClass: "border-[#4a7a50] bg-stone-100/80 dark:bg-[#18261e] text-stone-800 dark:text-emerald-200 ring-2 ring-[#4a7a50]/20 shadow-xs",
+    hoverClass: "hover:border-stone-300 hover:bg-stone-50/40 dark:hover:bg-[#18261e]/40",
   },
 ]
 
@@ -137,26 +137,26 @@ export function EditContentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity" 
+        className="fixed inset-0 bg-slate-950/50 dark:bg-black/75 backdrop-blur-sm transition-opacity" 
         onClick={onClose} 
       />
 
-      <div className="relative bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 z-10 shadow-2xl border border-gray-100 my-auto transform transition-all">
+      <div className="relative bg-white dark:bg-[#131d16] text-stone-800 dark:text-stone-100 rounded-3xl w-full max-w-lg p-5 sm:p-7 z-10 shadow-2xl border border-stone-100 dark:border-emerald-950/70 my-auto transform transition-all">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-500/25 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#2d4a31] to-[#4a7a50] dark:from-emerald-600 dark:to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-900/20 shrink-0">
               <EditIcon size="md" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Edit Content</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Update title, category, or note details</p>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 tracking-tight">Edit Content</h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Update title, category, or note details</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-stone-400 hover:text-stone-700 dark:text-stone-400 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-[#1b2b20] transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             <CrossIcon size="md" />
@@ -165,7 +165,7 @@ export function EditContentModal({
 
         {/* Type Selector Tiles */}
         <div className="mb-5">
-          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-2">
             Change Type
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -180,7 +180,7 @@ export function EditContentModal({
                     setError(null)
                   }}
                   className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-200 cursor-pointer text-center ${
-                    isActive ? opt.activeClass : `border-gray-200 text-gray-600 bg-white ${opt.hoverClass}`
+                    isActive ? opt.activeClass : `border-stone-200 dark:border-emerald-950/70 text-stone-600 dark:text-stone-300 bg-white dark:bg-[#0c120e] ${opt.hoverClass}`
                   }`}
                 >
                   <span className="text-lg mb-1">{opt.icon}</span>
@@ -194,7 +194,7 @@ export function EditContentModal({
         {/* Form Inputs */}
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
               Title
             </label>
             <Input
@@ -206,7 +206,7 @@ export function EditContentModal({
 
           {type !== "note" ? (
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
                 {type === "youtube" ? "YouTube Video URL" : type === "twitter" ? "Twitter / X URL" : "Web URL"}
               </label>
               <Input
@@ -217,7 +217,7 @@ export function EditContentModal({
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
                 Note Content
               </label>
               <textarea
@@ -225,13 +225,13 @@ export function EditContentModal({
                 onChange={(e) => setNote(e.target.value)}
                 rows={5}
                 placeholder="Write your note here..."
-                className="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-2xl resize-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 shadow-xs"
+                className="w-full px-4 py-3 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-2xl resize-none transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 shadow-xs"
               />
             </div>
           )}
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200/80 rounded-xl text-xs text-red-600 font-medium">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium">
               <span className="shrink-0 font-bold">⚠️</span>
               <span>{error}</span>
             </div>
@@ -239,7 +239,7 @@ export function EditContentModal({
         </div>
 
         {/* Modal Actions */}
-        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+        <div className="mt-6 pt-4 border-t border-stone-100 dark:border-emerald-950/70 flex items-center justify-end gap-3">
           <Button
             varient="ghost"
             size="md"

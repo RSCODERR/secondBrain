@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useTheme } from "../context/ThemeContext"
 import { BinIcon } from "../icons/binIcon"
 import { EditIcon } from "../icons/editIcon"
 import { LinkIcon } from "../icons/linkIcon"
@@ -89,10 +90,26 @@ const getHostname = (url: string | null | undefined): string => {
 }
 
 const TwitterEmbed = ({ link }: { link: string }) => {
+  const { resolvedTheme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const cleanLink = link.trim().replace(/^https?:\/\/x\.com/, "https://twitter.com")
 
   useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.innerHTML = `
+        <blockquote class="twitter-tweet" data-dnt="true" data-theme="${resolvedTheme}" data-width="100%">
+          <a 
+            href="${cleanLink}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="${resolvedTheme === "dark" ? "text-emerald-400" : "text-[#2d4a31]"} hover:underline text-sm font-medium"
+          >
+            Loading tweet from @X...
+          </a>
+        </blockquote>
+      `
+    }
+
     if (window.twttr?.widgets) {
       window.twttr.widgets.load(containerRef.current)
     } else {
@@ -112,46 +129,35 @@ const TwitterEmbed = ({ link }: { link: string }) => {
         })
       }
     }
-  }, [cleanLink])
+  }, [cleanLink, resolvedTheme])
 
   return (
-    <div ref={containerRef} className="w-full max-w-full overflow-hidden flex justify-center mt-1 min-h-[12rem]">
-      <blockquote className="twitter-tweet" data-dnt="true" data-theme="light" data-width="100%">
-        <a 
-          href={cleanLink} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="text-indigo-600 hover:underline text-sm font-medium"
-        >
-          Loading tweet from @X...
-        </a>
-      </blockquote>
-    </div>
+    <div ref={containerRef} className="w-full max-w-full overflow-hidden flex justify-center mt-1 min-h-[12rem]" />
   )
 }
 
 const typeStyles = {
   youtube: {
     accent: "from-red-500 to-rose-600",
-    badge: "bg-red-50 text-red-700 border-red-200/80",
+    badge: "bg-red-50 text-red-700 border-red-200/80 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/60",
     label: "YouTube",
     icon: <YoutubeIcon />,
   },
   twitter: {
     accent: "from-sky-500 to-blue-600",
-    badge: "bg-sky-50 text-sky-700 border-sky-200/80",
+    badge: "bg-sky-50 text-sky-700 border-sky-200/80 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-900/60",
     label: "Twitter",
     icon: <TwitterIcon />,
   },
   link: {
-    accent: "from-[#2d4a31] to-[#4a7a50]",
-    badge: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+    accent: "from-[#2d4a31] to-[#4a7a50] dark:from-emerald-500 dark:to-teal-400",
+    badge: "bg-emerald-50 text-emerald-800 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60",
     label: "Link",
     icon: <LinkIcon />,
   },
   note: {
-    accent: "from-[#4a7a50] to-stone-600",
-    badge: "bg-stone-100 text-stone-700 border-stone-200/80",
+    accent: "from-[#4a7a50] to-stone-600 dark:from-emerald-600 dark:to-stone-500",
+    badge: "bg-stone-100 text-stone-700 border-stone-200/80 dark:bg-[#18261e] dark:text-stone-300 dark:border-emerald-900/50",
     label: "Note",
     icon: <NoteIcon />,
   },
@@ -184,7 +190,7 @@ export const Card = ({
   }
 
   return (
-    <div className="group relative flex flex-col bg-white rounded-2xl border border-stone-200/90 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-md hover:border-[#2d4a31]/30 transition-all duration-200 overflow-hidden w-full min-w-0 max-w-full h-auto">
+    <div className="group relative flex flex-col bg-white dark:bg-[#121c15] rounded-2xl border border-stone-200/90 dark:border-emerald-950/70 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-md dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:border-[#2d4a31]/30 dark:hover:border-emerald-600/40 transition-all duration-200 overflow-hidden w-full min-w-0 max-w-full h-auto">
       {/* Top subtle category accent bar */}
       <div className={`h-1 w-full bg-gradient-to-r ${style.accent}`} />
 
@@ -205,7 +211,7 @@ export const Card = ({
                   href={link} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors cursor-pointer active:scale-95"
+                  className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer active:scale-95"
                   title="Open original link"
                   aria-label="Open original link"
                 >
@@ -219,14 +225,14 @@ export const Card = ({
                 onClick={handleShareCard}
                 className={`p-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1 active:scale-95 ${
                   copied 
-                    ? "text-emerald-700 bg-emerald-50 font-semibold" 
-                    : "text-stone-400 hover:text-stone-800 hover:bg-stone-100"
+                    ? "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-950/60 font-semibold" 
+                    : "text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e]"
                 }`}
                 title={copied ? "Copied to clipboard!" : "Share this card"}
                 aria-label="Share this card"
               >
                 {copied ? (
-                  <span className="flex items-center gap-1 text-xs text-emerald-700 font-medium">
+                  <span className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                     </svg>
@@ -240,7 +246,7 @@ export const Card = ({
               {!readonly && onEdit && (
                 <button
                   onClick={() => onEdit({ _id: id, title, link, note, type })}
-                  className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors cursor-pointer active:scale-95"
+                  className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer active:scale-95"
                   title="Edit card"
                   aria-label="Edit card"
                 >
@@ -251,7 +257,7 @@ export const Card = ({
               {!readonly && (
                 <button
                   onClick={() => onDelete?.(id)}
-                  className="p-2 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer active:scale-95"
+                  className="p-2 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:text-stone-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-colors cursor-pointer active:scale-95"
                   title="Delete card"
                   aria-label="Delete card"
                 >
@@ -262,7 +268,7 @@ export const Card = ({
           </div>
 
           {/* Desktop Title & Toolbar Combined */}
-          <h3 className="font-bold text-stone-900 text-sm sm:text-base leading-snug break-words md:truncate md:flex-1 md:mx-2" title={title}>
+          <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm sm:text-base leading-snug break-words md:truncate md:flex-1 md:mx-2" title={title}>
             {title}
           </h3>
 
@@ -273,7 +279,7 @@ export const Card = ({
                 href={link} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer"
                 title="Open original link"
                 aria-label="Open original link"
               >
@@ -287,14 +293,14 @@ export const Card = ({
               onClick={handleShareCard}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
                 copied 
-                  ? "text-emerald-700 bg-emerald-50 font-semibold" 
-                  : "text-stone-400 hover:text-stone-800 hover:bg-stone-100"
+                  ? "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-950/60 font-semibold" 
+                  : "text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e]"
               }`}
               title={copied ? "Copied to clipboard!" : "Share this card"}
               aria-label="Share this card"
             >
               {copied ? (
-                <span className="flex items-center gap-1 text-xs text-emerald-700 font-medium">
+                <span className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
@@ -308,7 +314,7 @@ export const Card = ({
             {!readonly && onEdit && (
               <button
                 onClick={() => onEdit({ _id: id, title, link, note, type })}
-                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer"
                 title="Edit card"
                 aria-label="Edit card"
               >
@@ -319,7 +325,7 @@ export const Card = ({
             {!readonly && (
               <button
                 onClick={() => onDelete?.(id)}
-                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:text-stone-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                 title="Delete card"
                 aria-label="Delete card"
               >
@@ -332,7 +338,7 @@ export const Card = ({
         {/* Content Body */}
         <div className="flex-1 overflow-visible pr-0 min-w-0">
           {type === "youtube" && link && (
-            <div className="w-full aspect-video mt-1 rounded-xl overflow-hidden shadow-2xs border border-stone-200 bg-black">
+            <div className="w-full aspect-video mt-1 rounded-xl overflow-hidden shadow-2xs border border-stone-200 dark:border-emerald-950/70 bg-black">
               {youtubeEmbedUrl ? (
                 <iframe
                   className="w-full h-full"
@@ -343,13 +349,13 @@ export const Card = ({
                   allowFullScreen
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full bg-stone-50 p-3 text-center">
-                  <p className="text-xs text-stone-500 mb-1">Preview not available</p>
+                <div className="flex flex-col items-center justify-center h-full bg-stone-50 dark:bg-[#0c120e] p-3 text-center">
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Preview not available</p>
                   <a 
                     href={link} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-xs text-red-600 font-semibold hover:underline"
+                    className="text-xs text-red-600 dark:text-red-400 font-semibold hover:underline"
                   >
                     Open on YouTube ↗
                   </a>
@@ -367,27 +373,27 @@ export const Card = ({
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col p-3.5 sm:p-4 rounded-xl bg-stone-50/80 hover:bg-stone-100/80 border border-stone-200 hover:border-[#2d4a31]/30 transition-all duration-200 group/link mt-1.5 shadow-2xs"
+              className="flex flex-col p-3.5 sm:p-4 rounded-xl bg-stone-50/80 hover:bg-stone-100/80 border border-stone-200 hover:border-[#2d4a31]/30 dark:bg-[#0c120e]/80 dark:hover:bg-[#142017] dark:border-emerald-950/80 dark:hover:border-emerald-600/40 transition-all duration-200 group/link mt-1.5 shadow-2xs"
             >
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-white border border-stone-200 text-stone-700 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-white dark:bg-[#18261e] border border-stone-200 dark:border-emerald-900/60 text-stone-700 dark:text-stone-300 shadow-2xs">
                   <LinkIcon size="sm" />
                   <span className="truncate max-w-[160px]">{hostname}</span>
                 </span>
-                <span className="text-xs font-semibold text-[#2d4a31] flex items-center gap-1 group-hover/link:translate-x-0.5 transition-transform">
+                <span className="text-xs font-semibold text-[#2d4a31] dark:text-emerald-400 flex items-center gap-1 group-hover/link:translate-x-0.5 transition-transform">
                   <span>Visit</span>
                   <span>↗</span>
                 </span>
               </div>
-              <p className="text-xs text-stone-600 line-clamp-2 break-all group-hover/link:text-stone-900 transition-colors">
+              <p className="text-xs text-stone-600 dark:text-stone-400 line-clamp-2 break-all group-hover/link:text-stone-900 dark:group-hover/link:text-stone-200 transition-colors">
                 {link}
               </p>
             </a>
           )}
 
           {type === "note" && (
-            <div className="bg-stone-50/80 border border-stone-200/90 rounded-xl p-3.5 sm:p-4 shadow-2xs">
-              <p className="whitespace-pre-wrap text-stone-800 text-sm leading-relaxed break-words font-sans">
+            <div className="bg-stone-50/80 border border-stone-200/90 dark:bg-[#0c120e]/80 dark:border-emerald-950/80 rounded-xl p-3.5 sm:p-4 shadow-2xs">
+              <p className="whitespace-pre-wrap text-stone-800 dark:text-stone-200 text-sm leading-relaxed break-words font-sans">
                 {note}
               </p>
             </div>

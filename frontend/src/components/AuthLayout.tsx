@@ -20,7 +20,7 @@ export function AuthLayout({
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen w-full flex bg-stone-100 selection:bg-green-800 selection:text-white">
+    <div className="min-h-screen w-full flex bg-stone-100 dark:bg-[#080d09] selection:bg-green-800 selection:text-white transition-colors duration-200">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-5/12 flex-col justify-between p-12 xl:p-16 relative overflow-hidden bg-[#1c2b1e]">
 
@@ -79,30 +79,30 @@ export function AuthLayout({
       </div>
 
       {/* Right Form Area */}
-      <div className="w-full lg:w-1/2 xl:w-7/12 flex items-center justify-center p-4 sm:p-8 lg:p-12 min-h-screen">
-        <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-9 shadow-lg shadow-stone-900/8 border border-stone-200/70 animate-fade-in-up">
+      <div className="relative w-full lg:w-1/2 xl:w-7/12 flex items-center justify-center p-4 sm:p-8 lg:p-12 min-h-screen">
+        <div className="w-full max-w-md bg-white dark:bg-[#121c15] text-stone-800 dark:text-stone-100 rounded-2xl p-6 sm:p-9 shadow-lg shadow-stone-900/8 dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-stone-200/70 dark:border-emerald-950/70 animate-fade-in-up transition-colors">
 
           {/* Mobile Brand Header */}
           <div className="lg:hidden flex items-center justify-center mb-6">
             <Link to="/" className="inline-flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-[#2d4a31] flex items-center justify-center text-white">
+              <div className="w-9 h-9 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 flex items-center justify-center text-white shadow-sm">
                 <BrainIcon />
               </div>
-              <span className="text-lg font-bold tracking-tight text-stone-900">
+              <span className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100">
                 Second Brain
               </span>
             </Link>
           </div>
 
           {/* Tab switcher */}
-          <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-xl mb-7 border border-stone-200/50">
+          <div className="grid grid-cols-2 p-1 bg-stone-100 dark:bg-[#0c120e] rounded-xl mb-7 border border-stone-200/50 dark:border-emerald-950/80">
             <button
               type="button"
               onClick={() => navigate("/signin")}
               className={`py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
                 activeTab === "signin"
-                  ? "bg-white text-stone-900 shadow-xs border border-stone-200/60"
-                  : "text-stone-500 hover:text-stone-700"
+                  ? "bg-white dark:bg-[#18261e] text-stone-900 dark:text-emerald-300 shadow-xs border border-stone-200/60 dark:border-emerald-800/60 font-bold"
+                  : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
               }`}
             >
               Sign In
@@ -112,8 +112,8 @@ export function AuthLayout({
               onClick={() => navigate("/signup")}
               className={`py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
                 activeTab === "signup"
-                  ? "bg-white text-stone-900 shadow-xs border border-stone-200/60"
-                  : "text-stone-500 hover:text-stone-700"
+                  ? "bg-white dark:bg-[#18261e] text-stone-900 dark:text-emerald-300 shadow-xs border border-stone-200/60 dark:border-emerald-800/60 font-bold"
+                  : "text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
               }`}
             >
               Create Account
@@ -122,10 +122,10 @@ export function AuthLayout({
 
           {/* Form Header */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold tracking-tight text-stone-900">
+            <h2 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-100">
               {title}
             </h2>
-            <p className="text-sm text-stone-500 mt-1">
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
               {subtitle}
             </p>
           </div>
@@ -134,7 +134,7 @@ export function AuthLayout({
           {children}
 
           {/* Footer */}
-          <div className="mt-6 pt-5 border-t border-stone-100 text-center text-sm">
+          <div className="mt-6 pt-5 border-t border-stone-100 dark:border-emerald-950/70 text-center text-sm text-stone-500 dark:text-stone-400">
             {footer}
           </div>
         </div>

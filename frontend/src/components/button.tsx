@@ -19,13 +19,13 @@ interface ButtonProps {
 
 const varientStyles = {
   primary:
-    "bg-[#2d4a31] text-white shadow-sm shadow-green-900/20 hover:bg-[#3a5e40] hover:shadow-md hover:shadow-green-900/30 border border-white/10",
+    "bg-[#2d4a31] text-white shadow-sm shadow-green-900/20 hover:bg-[#3a5e40] hover:shadow-md hover:shadow-green-900/30 border border-white/10 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:text-white dark:border-emerald-400/20 dark:shadow-[0_0_20px_rgba(16,185,129,0.25)]",
   secondary:
-    "bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 hover:bg-stone-50/90 hover:border-stone-300 shadow-xs hover:shadow-sm",
+    "bg-white text-stone-700 hover:text-stone-900 border border-stone-200/90 hover:bg-stone-50/90 hover:border-stone-300 shadow-xs hover:shadow-sm dark:bg-[#142017] dark:text-emerald-100 dark:border-emerald-900/60 dark:hover:bg-[#1b2b20] dark:hover:border-emerald-700/60 dark:hover:text-white",
   danger:
-    "bg-red-50/90 text-red-600 hover:text-red-700 border border-red-200/80 hover:bg-red-100/80 hover:border-red-300 shadow-xs",
+    "bg-red-50/90 text-red-600 hover:text-red-700 border border-red-200/80 hover:bg-red-100/80 hover:border-red-300 shadow-xs dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/60 dark:hover:bg-red-900/50 dark:hover:border-red-700",
   ghost:
-    "bg-transparent text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent",
+    "bg-transparent text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent dark:text-stone-300 dark:hover:text-white dark:hover:bg-white/5",
 }
 
 const sizeStyles = {
@@ -35,7 +35,7 @@ const sizeStyles = {
 }
 
 const defaultStyles =
-  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight box-border min-w-0"
+  "hover:cursor-pointer rounded-xl inline-flex items-center justify-center transition-all duration-200 ease-out active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 dark:focus-visible:ring-emerald-500 dark:focus-visible:ring-offset-[#0b110d] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100 select-none tracking-tight box-border min-w-0"
 
 export const Button = (props: ButtonProps) => {
   return (
