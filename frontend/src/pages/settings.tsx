@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme, type ThemePreset } from "../context/ThemeContext";
 import { BrainIcon } from "../icons/brainIcon";
 import { MenuIcon } from "../icons/menuIcon";
 import { LogoutIcon } from "../icons/logoutIcon";
@@ -11,7 +11,6 @@ import { EyeopenIcon } from "../icons/eyeopenIcon";
 import { EyeoffIcon } from "../icons/eyeoffIcon";
 import { SunIcon } from "../icons/sunIcon";
 import { MoonIcon } from "../icons/moonIcon";
-import { SystemIcon } from "../icons/systemIcon";
 import "../App.css";
 
 /* ─── tiny helper: debounce ─── */
@@ -24,12 +23,121 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
+interface ThemePresetOption {
+  id: ThemePreset;
+  title: string;
+  description: string;
+  badge?: string;
+  icon: React.ReactNode;
+}
+
+const THEME_PRESETS: ThemePresetOption[] = [
+  {
+    id: "emerald-glow",
+    title: "SecondBrain Glow",
+    description: "The original Second Brain look with obsidian emerald and mint glow",
+    badge: "Original",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-900 to-emerald-500 text-white flex items-center justify-center shadow-xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l2.4 6.8 6.8 2.4-6.8 2.4L12 20.4l-2.4-6.8L2.8 11.2l6.8-2.4z" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    id: "dark",
+    title: "Dark",
+    description: "Clean neutral black and charcoal with crisp contrast",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-stone-800 text-stone-200 border border-stone-700/60 flex items-center justify-center shadow-xs">
+        <MoonIcon size="md" />
+      </div>
+    ),
+  },
+  {
+    id: "light",
+    title: "Light",
+    description: "Crisp white and clean slate for high daylight visibility",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 border border-amber-200 flex items-center justify-center shadow-xs">
+        <SunIcon size="md" />
+      </div>
+    ),
+  },
+  {
+    id: "monochrome",
+    title: "Monochrome",
+    description: "Quiet, focused black and white. Removes decorative colors",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-black text-white border border-stone-700 flex items-center justify-center shadow-xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1 0-16v16z" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    id: "high-contrast",
+    title: "High Contrast",
+    description: "Sharper edges, pure OLED black, and ultra-bright text",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-black text-white border-2 border-white flex items-center justify-center shadow-xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 3v18" strokeWidth="2.5" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    id: "midnight",
+    title: "Midnight",
+    description: "A calmer deep sapphire and oceanic blue-only palette",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-700 text-sky-300 border border-blue-900/60 flex items-center justify-center shadow-xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    id: "cyberpunk",
+    title: "Cyberpunk",
+    description: "Vibrant neon violet & magenta electric night glow",
+    icon: (
+      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-950 to-pink-600 text-pink-200 border border-pink-500/40 flex items-center justify-center shadow-xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" />
+        </svg>
+      </div>
+    ),
+  },
+];
+
+const ACCENT_PRESETS = [
+  { name: "Emerald", color: "#10b981" },
+  { name: "Sky Blue", color: "#0ea5e9" },
+  { name: "Teal Cyan", color: "#14b8a6" },
+  { name: "Royal Violet", color: "#8b5cf6" },
+  { name: "Vibrant Rose", color: "#ec4899" },
+  { name: "Sunset Amber", color: "#f59e0b" },
+  { name: "Flame Orange", color: "#f97316" },
+];
+
 /* ─── availability states ─── */
 type AvailStatus = "idle" | "checking" | "available" | "taken" | "self" | "error";
 
 export default function Settings() {
   const { user, logout, updateUsername } = useAuth();
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const {
+    themePreset,
+    accentColor,
+    setThemePreset,
+    setAccentColor,
+    resetAppearance,
+  } = useTheme();
   const navigate = useNavigate();
 
   /* ── sidebar open state (mobile) ── */
@@ -346,83 +454,194 @@ export default function Settings() {
                Appearance & Theme card
           ══════════════════════════════ */}
           <div className="bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/70 rounded-2xl shadow-xs overflow-hidden transition-colors">
-            <div className="px-5 py-4 border-b border-stone-100 dark:border-emerald-950/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            {/* Card Header */}
+            <div className="px-5 py-4 border-b border-stone-100 dark:border-emerald-950/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
               <div>
                 <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Appearance & Theme</h2>
-                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Choose your interface theme or sync with system preferences</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Customize your interface theme, palette presets, and highlight accents</p>
               </div>
-              <span className="self-start sm:self-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-[#2d4a31]/10 dark:bg-emerald-950/60 text-[#2d4a31] dark:text-emerald-300 border border-[#2d4a31]/20 dark:border-emerald-800/60">
-                Current: {theme === "system" ? `System (${resolvedTheme === "dark" ? "Dark" : "Light"})` : theme === "dark" ? "Dark" : "Light"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-900/80 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
+                  <span className="capitalize">{themePreset.replace("-", " ")}</span>
+                </span>
+              </div>
             </div>
 
-            <div className="p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* Option 1: Light */}
-                <button
-                  type="button"
-                  onClick={() => setTheme("light")}
-                  className={`group/btn relative flex flex-col text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                    theme === "light"
-                      ? "border-[#2d4a31] ring-2 ring-[#2d4a31]/20 bg-stone-50/90 shadow-xs"
-                      : "border-stone-200 dark:border-emerald-900/40 bg-white dark:bg-[#0e1611] hover:border-stone-300 dark:hover:border-emerald-700/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shadow-2xs">
-                      <SunIcon size="md" />
-                    </div>
-                    {theme === "light" && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#2d4a31]" />
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">Light Mode</span>
-                  <span className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Dark green & crisp white</span>
-                </button>
+            <div className="p-5 sm:p-6">
+              {/* ── SECTION: THEME PRESETS ── */}
+              <div>
+                <div className="mb-3.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
+                    Appearance
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5">
+                    Theme presets
+                  </h3>
+                </div>
 
-                {/* Option 2: Dark */}
-                <button
-                  type="button"
-                  onClick={() => setTheme("dark")}
-                  className={`group/btn relative flex flex-col text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                    theme === "dark"
-                      ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-950/40 shadow-xs"
-                      : "border-stone-200 dark:border-emerald-900/40 bg-white dark:bg-[#0e1611] hover:border-stone-300 dark:hover:border-emerald-700/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-900/50 text-emerald-400 border border-emerald-700/40 flex items-center justify-center shadow-2xs">
-                      <MoonIcon size="md" />
-                    </div>
-                    {theme === "dark" && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">Dark Mode</span>
-                  <span className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Obsidian emerald & glowing mint</span>
-                </button>
+                <div className="flex flex-col gap-2.5">
+                  {THEME_PRESETS.map((preset) => {
+                    const isSelected = themePreset === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setThemePreset(preset.id)}
+                        className={`group w-full flex items-center justify-between p-3 sm:p-3.5 rounded-xl border transition-all duration-200 cursor-pointer text-left ${
+                          isSelected
+                            ? "border-[var(--accent-color)] bg-[var(--accent-subtle)] ring-1.5 ring-[var(--accent-border)] shadow-xs"
+                            : "border-stone-200/90 dark:border-stone-800/80 bg-stone-50/40 dark:bg-[#0c120e] hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-100/50 dark:hover:bg-[#121b14]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="shrink-0">{preset.icon}</div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                              <span>{preset.title}</span>
+                              {preset.badge && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  {preset.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 truncate sm:whitespace-normal">
+                              {preset.description}
+                            </p>
+                          </div>
+                        </div>
 
-                {/* Option 3: System */}
-                <button
-                  type="button"
-                  onClick={() => setTheme("system")}
-                  className={`group/btn relative flex flex-col text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                    theme === "system"
-                      ? "border-[#2d4a31] dark:border-emerald-500 ring-2 ring-[#2d4a31]/20 dark:ring-emerald-500/20 bg-stone-50/90 dark:bg-emerald-950/40 shadow-xs"
-                      : "border-stone-200 dark:border-emerald-900/40 bg-white dark:bg-[#0e1611] hover:border-stone-300 dark:hover:border-emerald-700/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-[#19271e] text-stone-700 dark:text-emerald-300 border border-stone-200 dark:border-emerald-800/40 flex items-center justify-center shadow-2xs">
-                      <SystemIcon size="md" />
+                        <div className="shrink-0 ml-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                              isSelected
+                                ? "border-transparent bg-[var(--accent-color)] text-white shadow-xs scale-105"
+                                : "border-stone-300 dark:border-stone-700 bg-transparent"
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── SECTION: CHOOSE AN ACCENT ── */}
+              <div className="mt-8 pt-6 border-t border-stone-200/80 dark:border-stone-800/80">
+                <div className="mb-3.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block">
+                    Personalize
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5">
+                    Choose an accent
+                  </h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                    Keep the familiar Second Brain layout and make the highlights yours.
+                  </p>
+                </div>
+
+                {/* Swatches Container */}
+                <div className="p-3.5 bg-stone-50/80 dark:bg-[#0c120e] rounded-2xl border border-stone-200/80 dark:border-stone-800/80">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {ACCENT_PRESETS.map((preset) => {
+                      const isSelected = accentColor.toLowerCase() === preset.color.toLowerCase();
+                      return (
+                        <button
+                          key={preset.color}
+                          type="button"
+                          onClick={() => setAccentColor(preset.color)}
+                          title={preset.name}
+                          aria-label={preset.name}
+                          className={`relative w-10 h-10 rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center hover:scale-110 active:scale-95 shadow-xs ${
+                            isSelected ? "ring-3 ring-offset-2 ring-[var(--accent-color)] dark:ring-offset-[#0c120e] scale-105" : ""
+                          }`}
+                          style={{ backgroundColor: preset.color }}
+                        >
+                          {isSelected && (
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    {/* Custom Color Picker Swatch */}
+                    <div className="relative group">
+                      <label
+                        title="Pick custom accent color"
+                        className={`relative w-10 h-10 rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center border-2 border-dashed border-stone-300 dark:border-stone-600 hover:scale-110 active:scale-95 bg-gradient-to-tr from-indigo-500 via-pink-500 to-amber-400 shadow-xs ${
+                          !ACCENT_PRESETS.some((p) => p.color.toLowerCase() === accentColor.toLowerCase())
+                            ? "ring-3 ring-offset-2 ring-[var(--accent-color)] dark:ring-offset-[#0c120e] scale-105"
+                            : ""
+                        }`}
+                        style={
+                          !ACCENT_PRESETS.some((p) => p.color.toLowerCase() === accentColor.toLowerCase())
+                            ? { backgroundColor: accentColor }
+                            : {}
+                        }
+                      >
+                        <input
+                          type="color"
+                          value={accentColor}
+                          onChange={(e) => setAccentColor(e.target.value)}
+                          className="sr-only"
+                        />
+                        {!ACCENT_PRESETS.some((p) => p.color.toLowerCase() === accentColor.toLowerCase()) ? (
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                        )}
+                      </label>
                     </div>
-                    {theme === "system" && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#2d4a31] dark:bg-emerald-400" />
-                    )}
+
+                    {/* Hex display badge */}
+                    <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#141d16] border border-stone-200 dark:border-stone-800 text-xs font-mono font-semibold text-stone-700 dark:text-stone-300 shadow-2xs">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accentColor }} />
+                      <span>{accentColor.toUpperCase()}</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">System Sync</span>
-                  <span className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Automatically syncs with OS</span>
-                </button>
+                </div>
+
+                {/* ── CALLOUT TIP BOX ── */}
+                <div className="mt-4 p-3.5 rounded-xl bg-emerald-500/10 dark:bg-[#0d1811] border border-emerald-500/20 dark:border-emerald-900/40 flex items-start gap-3">
+                  <div className="shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  </div>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+                    <strong>Monochrome</strong> removes decorative color. <strong>High Contrast</strong> keeps status colors while making text and controls easier to distinguish.
+                  </p>
+                </div>
+
+                {/* ── RESTORE DEFAULTS BUTTON ── */}
+                <div className="mt-5 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={resetAppearance}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-[#152018] rounded-xl transition-all duration-200 cursor-pointer border border-transparent hover:border-stone-200 dark:hover:border-stone-800"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                      <path d="M8 16H3v5" />
+                    </svg>
+                    <span>Restore SecondBrain Defaults</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

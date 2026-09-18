@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { BrainIcon } from "../icons/brainIcon";
 import { LandingThemeToggle } from "../components/LandingThemeToggle";
+import { useTheme } from "../context/ThemeContext";
 import "../App.css";
 
 // ─── Typewriter ────────────────────────────────────────────────────────────────
@@ -46,9 +47,19 @@ const SECTIONS = [
 ];
 
 export default function LandingPage() {
+  const { setTheme } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
   const [visited, setVisited] = useState<boolean[]>([true, false, false, false, false]);
   const isScrollingRef = useRef(false);
+
+  // On mobile devices, ensure system default theme preference is active on the landing page
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      if (!localStorage.getItem("sb_theme_preset")) {
+        setTheme("system");
+      }
+    }
+  }, [setTheme]);
 
   const lockScroll = useCallback(() => {
     isScrollingRef.current = true;
@@ -225,7 +236,9 @@ export default function LandingPage() {
             <span className="text-sm md:text-base font-bold tracking-tight text-white">Second Brain</span>
           </Link>
           <div className="flex items-center gap-2 md:gap-2.5">
-            <LandingThemeToggle />
+            <div className="hidden sm:inline-flex items-center">
+              <LandingThemeToggle />
+            </div>
             <Link
               to="/signin"
               className="px-3 py-1 md:px-3.5 md:py-1.5 text-xs sm:text-sm font-semibold text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
