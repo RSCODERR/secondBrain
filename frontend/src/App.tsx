@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 import DashBoard from "./pages/dashboard"
 import { SignIn } from "./pages/signIn"
 import { Signup } from "./pages/signup"
+import { ForgotPassword } from "./pages/forgotPassword"
 import LandingPage from "./pages/landingPage"
 import ShareView from "./pages/shareview"
 import ShareCardView from "./pages/shareCardView"
@@ -32,6 +33,14 @@ function App() {
           element={
             <PublicOnlyRoute>
               <SignIn />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicOnlyRoute>
+              <ForgotPassword />
             </PublicOnlyRoute>
           }
         />

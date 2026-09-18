@@ -5,6 +5,8 @@ import { BACKEND_URL } from "../config";
 interface User {
   id: string;
   username: string;
+  email?: string;
+  isEmailVerified?: boolean;
 }
 
 interface AuthContextType {
