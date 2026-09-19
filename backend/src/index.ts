@@ -1,3 +1,7 @@
+import dns from "dns";
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 import express from "express";
 import "dotenv/config";
 import cookieParser from "cookie-parser";
@@ -62,20 +66,78 @@ app.post("/api/v1/signup", async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-        const existingUsername = await User.findOne({ username: cleanUsername });
-        if (existingUsername) {
-            return res.status(409).json({ error: "Username already taken" });
+        const existingEmailUser = await User.findOne({ email: cleanEmail });
+        const existingUsernameUser = await User.findOne({ username: cleanUsername });
+
+        // 1. Check if a verified account already owns this email
+        if (existingEmailUser && existingEmailUser.isEmailVerified) {
+            return res.status(409).json({ error: "An account with this email already exists" });
         }
 
-        const existingEmail = await User.findOne({ email: cleanEmail });
-        if (existingEmail) {
-            return res.status(409).json({ error: "An account with this email already exists" });
+        // 2. Check if a verified account already owns this username
+        if (existingUsernameUser && existingUsernameUser.isEmailVerified) {
+            return res.status(409).json({ error: "Username already taken" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const otpCode = generateOTP();
         const verificationExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
+        // 3. Handle unverified account with this email (user re-attempting signup or editing details)
+        if (existingEmailUser && !existingEmailUser.isEmailVerified) {
+            if (existingUsernameUser && existingUsernameUser._id.toString() !== existingEmailUser._id.toString()) {
+                await User.deleteOne({ _id: existingUsernameUser._id });
+            }
+
+            existingEmailUser.username = cleanUsername;
+            existingEmailUser.password = hashedPassword;
+            existingEmailUser.verificationCode = otpCode;
+            existingEmailUser.verificationExpiresAt = verificationExpiresAt;
+            await existingEmailUser.save();
+
+            sendVerificationEmail(cleanEmail, cleanUsername, otpCode).catch((err) => {
+                console.error("[Signup] Error sending verification email:", err);
+            });
+
+            return res.status(200).json({
+                msg: "Registration updated! Please check your email for the verification code.",
+                email: cleanEmail,
+                requiresVerification: true,
+                user: {
+                    id: existingEmailUser._id,
+                    username: existingEmailUser.username,
+                    email: existingEmailUser.email,
+                    isEmailVerified: false
+                }
+            });
+        }
+
+        // 4. Handle unverified account with this username (user went back to fix email typo)
+        if (existingUsernameUser && !existingUsernameUser.isEmailVerified) {
+            existingUsernameUser.email = cleanEmail;
+            existingUsernameUser.password = hashedPassword;
+            existingUsernameUser.verificationCode = otpCode;
+            existingUsernameUser.verificationExpiresAt = verificationExpiresAt;
+            await existingUsernameUser.save();
+
+            sendVerificationEmail(cleanEmail, cleanUsername, otpCode).catch((err) => {
+                console.error("[Signup] Error sending verification email:", err);
+            });
+
+            return res.status(200).json({
+                msg: "Registration updated! Please check your email for the verification code.",
+                email: cleanEmail,
+                requiresVerification: true,
+                user: {
+                    id: existingUsernameUser._id,
+                    username: existingUsernameUser.username,
+                    email: existingUsernameUser.email,
+                    isEmailVerified: false
+                }
+            });
+        }
+
+        // 5. Brand new user registration
         const user = await User.create({
             username: cleanUsername,
             email: cleanEmail,
@@ -90,7 +152,7 @@ app.post("/api/v1/signup", async (req, res) => {
             console.error("[Signup] Error sending verification email:", err);
         });
 
-        res.status(201).json({
+        return res.status(201).json({
             msg: "Registration successful! Please check your email for the verification code.",
             email: cleanEmail,
             requiresVerification: true,

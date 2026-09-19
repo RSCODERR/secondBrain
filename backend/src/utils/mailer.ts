@@ -1,16 +1,52 @@
-import nodemailer from "nodemailer";
+import dns from "dns";
+import nodemailer, { SendMailOptions, SentMessageInfo } from "nodemailer";
 import crypto from "crypto";
 
-// Transporter configuration for Google Workspace / Gmail SMTP
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: process.env.SMTP_PORT === "587" ? false : true, // true for 465, false for 587
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS?.replace(/\s+/g, ""), // Strip whitespace from App Passwords
-  },
-});
+// Force IPv4 resolution to prevent ENETUNREACH in IPv6-unreachable cloud environments (e.g. Render)
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
+
+function createTransporter(port: number, secure: boolean) {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: port,
+    secure: secure,
+    family: 4, // CRITICAL FOR RENDER: forces IPv4 to eliminate ENETUNREACH on IPv6
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS?.replace(/\s+/g, ""), // Strip whitespace from App Passwords
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+  } as any);
+}
+
+const defaultPort = Number(process.env.SMTP_PORT) || 465;
+const defaultSecure = process.env.SMTP_PORT === "587" ? false : true;
+const primaryTransporter = createTransporter(defaultPort, defaultSecure);
+
+async function sendMailWithFallback(mailOptions: SendMailOptions): Promise<SentMessageInfo> {
+  try {
+    return await primaryTransporter.sendMail(mailOptions);
+  } catch (error: any) {
+    console.error(`[Mailer] Primary send (port ${defaultPort}) failed:`, error?.message || error);
+
+    // If port 465 failed due to connection/socket/network issue, try port 587 with STARTTLS
+    if (defaultPort === 465) {
+      console.log("[Mailer] Attempting fallback to port 587 (STARTTLS IPv4)...");
+      try {
+        const fallbackTransporter = createTransporter(587, false);
+        return await fallbackTransporter.sendMail(mailOptions);
+      } catch (fallbackError: any) {
+        console.error("[Mailer] Fallback send (port 587) also failed:", fallbackError?.message || fallbackError);
+        throw fallbackError;
+      }
+    }
+    throw error;
+  }
+}
 
 /**
  * Generate a cryptographically secure 6-digit OTP code
@@ -112,7 +148,7 @@ If you did not create a Second Brain account, please disregard this email.
   `.trim();
 
   try {
-    const info = await transporter.sendMail({
+    const info = await sendMailWithFallback({
       from: fromHeader,
       to: toEmail,
       subject: `${otpCode} is your Second Brain verification code`,
@@ -223,7 +259,7 @@ If you did not request a password reset, please disregard this email. Your accou
   `.trim();
 
   try {
-    const info = await transporter.sendMail({
+    const info = await sendMailWithFallback({
       from: fromHeader,
       to: toEmail,
       subject: `${resetCode} is your Second Brain password reset code`,

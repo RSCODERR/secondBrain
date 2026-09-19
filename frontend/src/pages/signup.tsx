@@ -98,7 +98,7 @@ export function Signup() {
         password: password,
       });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 200 || res.data?.requiresVerification) {
         setStep("verify");
         setResendCooldown(60);
       }
