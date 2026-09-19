@@ -1,18 +1,40 @@
 import dns from "dns";
+import { promisify } from "util";
 import nodemailer, { SendMailOptions, SentMessageInfo } from "nodemailer";
 import crypto from "crypto";
+
 
 // Force IPv4 resolution to prevent ENETUNREACH in IPv6-unreachable cloud environments (e.g. Render)
 if (typeof dns.setDefaultResultOrder === "function") {
   dns.setDefaultResultOrder("ipv4first");
 }
 
-function createTransporter(port: number, secure: boolean) {
+const resolve4 = promisify(dns.resolve4);
+
+/**
+ * Resolves a hostname to its first IPv4 address.
+ * On Render, smtp.gmail.com resolves to IPv6 by default, causing ENETUNREACH.
+ * By using dns.resolve4 we force the A-record lookup and get a usable IPv4 IP.
+ */
+async function resolveToIPv4(hostname: string): Promise<string> {
+  try {
+    const addresses = await resolve4(hostname);
+    if (addresses && addresses.length > 0) {
+      console.log(`[Mailer] Resolved ${hostname} → IPv4: ${addresses[0]}`);
+      return addresses[0];
+    }
+  } catch (e: any) {
+    console.warn(`[Mailer] dns.resolve4 failed for ${hostname}: ${e.message}. Using hostname as-is.`);
+  }
+  return hostname;
+}
+
+function createTransporter(host: string, port: number, secure: boolean) {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: port,
-    secure: secure,
-    family: 4, // CRITICAL FOR RENDER: forces IPv4 to eliminate ENETUNREACH on IPv6
+    host,
+    port,
+    secure,
+    family: 4, // Belt-and-suspenders: also tell Node's net layer to use IPv4
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS?.replace(/\s+/g, ""), // Strip whitespace from App Passwords
@@ -23,30 +45,34 @@ function createTransporter(port: number, secure: boolean) {
   } as any);
 }
 
-const defaultPort = Number(process.env.SMTP_PORT) || 465;
-const defaultSecure = process.env.SMTP_PORT === "587" ? false : true;
-const primaryTransporter = createTransporter(defaultPort, defaultSecure);
+const smtpHostname = process.env.SMTP_HOST || "smtp.gmail.com";
+const defaultPort = Number(process.env.SMTP_PORT) || 587; // Default to 587 (STARTTLS) - safer on cloud
+const defaultSecure = defaultPort === 465; // Only true for port 465 (SMTPS)
 
 async function sendMailWithFallback(mailOptions: SendMailOptions): Promise<SentMessageInfo> {
-  try {
-    return await primaryTransporter.sendMail(mailOptions);
-  } catch (error: any) {
-    console.error(`[Mailer] Primary send (port ${defaultPort}) failed:`, error?.message || error);
+  // Pre-resolve to IPv4 — this is the critical fix for Render's IPv6-only DNS
+  const resolvedHost = await resolveToIPv4(smtpHostname);
 
-    // If port 465 failed due to connection/socket/network issue, try port 587 with STARTTLS
-    if (defaultPort === 465) {
-      console.log("[Mailer] Attempting fallback to port 587 (STARTTLS IPv4)...");
-      try {
-        const fallbackTransporter = createTransporter(587, false);
-        return await fallbackTransporter.sendMail(mailOptions);
-      } catch (fallbackError: any) {
-        console.error("[Mailer] Fallback send (port 587) also failed:", fallbackError?.message || fallbackError);
-        throw fallbackError;
-      }
+  try {
+    const transporter = createTransporter(resolvedHost, defaultPort, defaultSecure);
+    return await transporter.sendMail(mailOptions);
+  } catch (error: any) {
+    console.error(`[Mailer] Primary send (port ${defaultPort}, host ${resolvedHost}) failed:`, error?.message || error);
+
+    // Try the alternate port as a last resort
+    const fallbackPort = defaultPort === 465 ? 587 : 465;
+    const fallbackSecure = fallbackPort === 465;
+    console.log(`[Mailer] Attempting fallback to port ${fallbackPort}...`);
+    try {
+      const fallbackTransporter = createTransporter(resolvedHost, fallbackPort, fallbackSecure);
+      return await fallbackTransporter.sendMail(mailOptions);
+    } catch (fallbackError: any) {
+      console.error(`[Mailer] Fallback send (port ${fallbackPort}) also failed:`, fallbackError?.message || fallbackError);
+      throw fallbackError;
     }
-    throw error;
   }
 }
+
 
 /**
  * Generate a cryptographically secure 6-digit OTP code
