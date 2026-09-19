@@ -22,6 +22,7 @@ export interface ThemeContextType {
   resolvedTheme: ResolvedTheme;
   themePreset: ThemePreset;
   accentColor: string;
+  accentStyles: React.CSSProperties;
   setTheme: (theme: Theme) => void;
   setThemePreset: (preset: ThemePreset) => void;
   setAccentColor: (color: string) => void;
@@ -44,7 +45,7 @@ function getSystemTheme(): ResolvedTheme {
     : "light";
 }
 
-function hexToRgba(hex: string, alpha: number): string {
+export function hexToRgba(hex: string, alpha: number): string {
   let c = hex.replace("#", "").trim();
   if (c.length === 3) {
     c = c.split("").map((x) => x + x).join("");
@@ -55,6 +56,26 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = (num >> 8) & 255;
   const b = num & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function getAccentStyles(
+  accentColor: string,
+  preset: ThemePreset,
+  resolvedTheme: ResolvedTheme
+): React.CSSProperties {
+  const activeAccent =
+    preset === "monochrome"
+      ? resolvedTheme === "dark"
+        ? "#ffffff"
+        : "#18181b"
+      : accentColor;
+
+  return {
+    ["--accent-color" as string]: activeAccent,
+    ["--accent-subtle" as string]: hexToRgba(activeAccent, 0.15),
+    ["--accent-border" as string]: hexToRgba(activeAccent, 0.35),
+    ["--accent-glow" as string]: hexToRgba(activeAccent, 0.28),
+  };
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -135,21 +156,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         root.style.colorScheme = "light";
       }
 
-      // Apply theme preset data attribute
-      root.setAttribute("data-theme-preset", themePreset);
-
-      // Apply dynamic accent CSS variables
-      const activeAccent =
-        themePreset === "monochrome"
-          ? active === "dark"
-            ? "#ffffff"
-            : "#18181b"
-          : accentColor;
-
-      root.style.setProperty("--accent-color", activeAccent);
-      root.style.setProperty("--accent-subtle", hexToRgba(activeAccent, 0.15));
-      root.style.setProperty("--accent-border", hexToRgba(activeAccent, 0.35));
-      root.style.setProperty("--accent-glow", hexToRgba(activeAccent, 0.28));
+      // Ensure global root does not carry theme preset or accent variables
+      // to avoid bleeding into signin, signup, forgot-password, or landing page
+      root.removeAttribute("data-theme-preset");
+      root.style.removeProperty("--accent-color");
+      root.style.removeProperty("--accent-subtle");
+      root.style.removeProperty("--accent-border");
+      root.style.removeProperty("--accent-glow");
     };
 
     updateTheme();
@@ -233,6 +246,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
+  const accentStyles = getAccentStyles(accentColor, themePreset, resolvedTheme);
+
   return (
     <ThemeContext.Provider
       value={{
@@ -240,6 +255,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         resolvedTheme,
         themePreset,
         accentColor,
+        accentStyles,
         setTheme,
         setThemePreset,
         setAccentColor,

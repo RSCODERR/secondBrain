@@ -37,10 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(null);
       setIsAuthenticated(false);
+      localStorage.removeItem("token");
       return false;
     } catch {
       setUser(null);
       setIsAuthenticated(false);
+      localStorage.removeItem("token");
       return false;
     } finally {
       setLoading(false);
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error("Logout request failed:", err);
     } finally {
+      localStorage.removeItem("token");
       setUser(null);
       setIsAuthenticated(false);
     }

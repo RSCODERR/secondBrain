@@ -17,11 +17,27 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-    origin: ["https://second-brain-eight-delta.vercel.app","http://localhost:5173"],
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+
+        const allowedOrigins = [
+            "https://second-brain-eight-delta.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:5173"
+        ];
+
+        if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+            return callback(null, true);
+        }
+
+        return callback(null, true);
+    },
     credentials: true,
-    methods:['GET','POST','PUT','DELETE','OPTIONS']
-}
-));
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Set-Cookie']
+}));
 app.use(cookieParser());
 
 app.post("/api/v1/signup", async (req, res) => {
@@ -143,6 +159,7 @@ app.post("/api/v1/verify-email", async (req, res) => {
         return res.json({
             msg: "Email verified successfully! Welcome to Second Brain.",
             verified: true,
+            token: token,
             user: {
                 id: user._id,
                 username: user.username,
@@ -363,6 +380,7 @@ app.post("/api/v1/signin", async (req, res) => {
 
      res.status(200).json({
         msg: "Logged in successfully",
+        token: token,
         user: {
             id: user._id,
             username: user.username,

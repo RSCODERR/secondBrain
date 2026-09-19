@@ -6,7 +6,7 @@ import { Card } from "../components/Card"
 import { LoaderIcon } from "../icons/loaderIcon"
 import { BrainIcon } from "../icons/brainIcon"
 import { Button } from "../components/button"
-import { LandingThemeToggle } from "../components/LandingThemeToggle"
+import { ThemeToggle } from "../components/ThemeToggle"
 
 interface SharedCardData {
   _id: string
@@ -74,7 +74,7 @@ export default function ShareCardView() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <LandingThemeToggle />
+          <ThemeToggle />
           <Link to="/signup">
             <Button text="Create Your Brain" size="sm" varient="primary" />
           </Link>

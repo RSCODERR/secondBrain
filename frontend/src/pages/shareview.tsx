@@ -10,7 +10,7 @@ import { TwitterIcon } from "../icons/twitterIcon"
 import { YoutubeIcon } from "../icons/youTubeIcon"
 import { LinkIcon } from "../icons/linkIcon"
 import { NoteIcon } from "../icons/noteIcon"
-import { LandingThemeToggle } from "../components/LandingThemeToggle"
+import { ThemeToggle } from "../components/ThemeToggle"
 
 type FilterType = "all" | "youtube" | "twitter" | "link" | "note"
 
@@ -112,7 +112,7 @@ export default function ShareView() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <LandingThemeToggle />
+          <ThemeToggle />
           <Link to="/signin" className="hidden sm:block">
             <Button text="Login" size="sm" varient="secondary" />
           </Link>

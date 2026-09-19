@@ -254,6 +254,9 @@ export function ForgotPassword() {
               }}
               placeholder="••••••"
               autoFocus
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full text-center text-2xl tracking-[12px] font-mono font-bold text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl py-3 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 shadow-xs"
             />
           </div>
@@ -275,7 +278,9 @@ export function ForgotPassword() {
                   if (error) setError(null);
                 }}
                 placeholder="At least 6 characters"
-                className="w-full pl-10 pr-11 py-2.5 text-sm sm:text-base text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs"
+                autoCapitalize="none"
+                autoCorrect="off"
+                className="w-full pl-10 pr-11 py-2.5 text-[16px] sm:text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs"
               />
               <button
                 type="button"
@@ -327,7 +332,9 @@ export function ForgotPassword() {
                   if (error) setError(null);
                 }}
                 placeholder="Re-enter new password"
-                className={`w-full pl-10 pr-11 py-2.5 text-sm sm:text-base text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:ring-4 shadow-xs ${
+                autoCapitalize="none"
+                autoCorrect="off"
+                className={`w-full pl-10 pr-11 py-2.5 text-[16px] sm:text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:ring-4 shadow-xs ${
                   confirmPassword && !passwordsMatch
                     ? "border-red-300 dark:border-red-800/80 focus:border-red-500 focus:ring-red-500/15"
                     : confirmPassword && passwordsMatch
@@ -447,7 +454,10 @@ export function ForgotPassword() {
               }}
               placeholder="e.g. alex@example.com"
               autoFocus
-              className="w-full pl-10 pr-4 py-2.5 text-sm sm:text-base text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full pl-10 pr-4 py-2.5 text-[16px] sm:text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs"
             />
           </div>
         </div>

@@ -20,7 +20,7 @@ export function AuthLayout({
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen w-full flex bg-stone-100 dark:bg-[#080d09] selection:bg-green-800 selection:text-white transition-colors duration-200">
+    <div className="dark min-h-screen w-full flex bg-[#080d09] selection:bg-green-800 selection:text-white transition-colors duration-200">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-5/12 flex-col justify-between p-12 xl:p-16 relative overflow-hidden bg-[#1c2b1e]">
 

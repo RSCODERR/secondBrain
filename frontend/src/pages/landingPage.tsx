@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { BrainIcon } from "../icons/brainIcon";
-import { LandingThemeToggle } from "../components/LandingThemeToggle";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { GitHubButton } from "../components/GitHubButton";
 import { useTheme } from "../context/ThemeContext";
 import "../App.css";
 
@@ -236,8 +237,10 @@ export default function LandingPage() {
             <span className="text-sm md:text-base font-bold tracking-tight text-white">Second Brain</span>
           </Link>
           <div className="flex items-center gap-2 md:gap-2.5">
+            <GitHubButton />
+
             <div className="hidden sm:inline-flex items-center">
-              <LandingThemeToggle />
+              <ThemeToggle />
             </div>
             <Link
               to="/signin"

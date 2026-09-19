@@ -17,9 +17,11 @@ import { EditContentModal, type ContentItem } from "../components/EditContentMod
 import { LogoutIcon } from "../icons/logoutIcon"
 import { useAuth } from "../context/AuthContext"
 import { ThemeToggle } from "../components/ThemeToggle"
+import { useTheme } from "../context/ThemeContext"
 
 function DashBoard() {
   const { logout } = useAuth()
+  const { themePreset, accentStyles } = useTheme()
   const [modalOpen, setModalOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -55,7 +57,11 @@ function DashBoard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-[#0b110d] text-stone-800 dark:text-stone-100 w-full max-w-full overflow-x-hidden transition-colors duration-200">
+    <div
+      data-theme-preset={themePreset}
+      style={accentStyles}
+      className="dashboard-scope min-h-screen bg-slate-50/70 dark:bg-[#0b110d] text-stone-800 dark:text-stone-100 w-full max-w-full overflow-x-hidden transition-colors duration-200"
+    >
       <SideBar
         onSelect={setFilterType}
         selectedType={filterType}
@@ -141,8 +147,8 @@ function DashBoard() {
 
             {/* Action Buttons: Capsule (tablet/desktop only) + Share Brain + Add Content */}
             <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-              <div className="hidden sm:block">
-                <ThemeToggle variant="capsule" />
+              <div className="hidden sm:flex items-center">
+                <ThemeToggle />
               </div>
 
               <Button

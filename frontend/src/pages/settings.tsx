@@ -134,6 +134,7 @@ export default function Settings() {
   const {
     themePreset,
     accentColor,
+    accentStyles,
     setThemePreset,
     setAccentColor,
     resetAppearance,
@@ -324,7 +325,11 @@ export default function Settings() {
   }, [newUsername, usernameStatus]);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-[#0b110d] text-stone-800 dark:text-stone-100 w-full transition-colors duration-200">
+    <div
+      data-theme-preset={themePreset}
+      style={accentStyles}
+      className="dashboard-scope min-h-screen bg-slate-50/70 dark:bg-[#0b110d] text-stone-800 dark:text-stone-100 w-full transition-colors duration-200"
+    >
       {/* ── Mobile sidebar backdrop ── */}
       {sidebarOpen && (
         <div
