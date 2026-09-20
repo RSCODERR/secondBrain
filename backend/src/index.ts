@@ -48,7 +48,8 @@ app.post("/api/v1/signup", async (req, res) => {
     const requiredBody = z.object({
         username: z.string().min(4, "Username too short").max(25, "Username too long"),
         email: z.string().email("Invalid email format"),
-        password: z.string().min(6, "Password must be at least 6 characters").max(25, "Password too long")
+        password: z.string().min(6, "Password must be at least 6 characters").max(25, "Password too long"),
+        pendingUserId: z.string().optional() // Tracks previous unverified account to clean up on re-edit
     });
 
     const parsedData = requiredBody.safeParse(req.body);
@@ -61,11 +62,27 @@ app.post("/api/v1/signup", async (req, res) => {
         });
     }
 
-    const { username, email, password } = parsedData.data;
+    const { username, email, password, pendingUserId } = parsedData.data;
     const cleanUsername = username.trim().toLowerCase();
     const cleanEmail = email.trim().toLowerCase();
 
     try {
+        // If the user went back to edit after signup and both email+username changed,
+        // clean up the old ghost unverified account using the pendingUserId from the previous response.
+        if (pendingUserId && mongoose.Types.ObjectId.isValid(pendingUserId)) {
+            const ghostAccount = await User.findById(pendingUserId);
+            if (ghostAccount && !ghostAccount.isEmailVerified) {
+                // Only delete if this ghost account doesn't match the new email/username
+                // (i.e., it really is a stale old attempt, not the same account)
+                const isStaleGhost =
+                    ghostAccount.email !== cleanEmail && ghostAccount.username !== cleanUsername;
+                if (isStaleGhost) {
+                    await User.deleteOne({ _id: ghostAccount._id });
+                    console.log(`[Signup] Cleaned up stale unverified account: ${ghostAccount.email}`);
+                }
+            }
+        }
+
         const existingEmailUser = await User.findOne({ email: cleanEmail });
         const existingUsernameUser = await User.findOne({ username: cleanUsername });
 
@@ -103,6 +120,7 @@ app.post("/api/v1/signup", async (req, res) => {
                 msg: "Registration updated! Please check your email for the verification code.",
                 email: cleanEmail,
                 requiresVerification: true,
+                pendingUserId: existingEmailUser._id.toString(),
                 user: {
                     id: existingEmailUser._id,
                     username: existingEmailUser.username,
@@ -128,6 +146,7 @@ app.post("/api/v1/signup", async (req, res) => {
                 msg: "Registration updated! Please check your email for the verification code.",
                 email: cleanEmail,
                 requiresVerification: true,
+                pendingUserId: existingUsernameUser._id.toString(),
                 user: {
                     id: existingUsernameUser._id,
                     username: existingUsernameUser.username,
@@ -156,6 +175,7 @@ app.post("/api/v1/signup", async (req, res) => {
             msg: "Registration successful! Please check your email for the verification code.",
             email: cleanEmail,
             requiresVerification: true,
+            pendingUserId: user._id.toString(),
             user: {
                 id: user._id,
                 username: user.username,

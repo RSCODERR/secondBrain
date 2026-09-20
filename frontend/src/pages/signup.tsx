@@ -24,6 +24,7 @@ export function Signup() {
   // Email verification step states
   const [step, setStep] = useState<"register" | "verify">("register");
   const [otp, setOtp] = useState("");
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
@@ -96,9 +97,13 @@ export function Signup() {
         username: trimmedUsername,
         email: trimmedEmail,
         password: password,
+        ...(pendingUserId ? { pendingUserId } : {}),
       });
 
       if (res.status === 201 || res.status === 200 || res.data?.requiresVerification) {
+        if (res.data?.pendingUserId) {
+          setPendingUserId(res.data.pendingUserId);
+        }
         setStep("verify");
         setResendCooldown(60);
       }
