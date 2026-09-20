@@ -1,78 +1,12 @@
-import dns from "dns";
-import { promisify } from "util";
-import nodemailer, { SendMailOptions, SentMessageInfo } from "nodemailer";
+import { Resend } from "resend";
 import crypto from "crypto";
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Force IPv4 resolution to prevent ENETUNREACH in IPv6-unreachable cloud environments (e.g. Render)
-if (typeof dns.setDefaultResultOrder === "function") {
-  dns.setDefaultResultOrder("ipv4first");
-}
-
-const resolve4 = promisify(dns.resolve4);
-
-/**
- * Resolves a hostname to its first IPv4 address.
- * On Render, smtp.gmail.com resolves to IPv6 by default, causing ENETUNREACH.
- * By using dns.resolve4 we force the A-record lookup and get a usable IPv4 IP.
- */
-async function resolveToIPv4(hostname: string): Promise<string> {
-  try {
-    const addresses = await resolve4(hostname);
-    if (addresses && addresses.length > 0) {
-      console.log(`[Mailer] Resolved ${hostname} → IPv4: ${addresses[0]}`);
-      return addresses[0];
-    }
-  } catch (e: any) {
-    console.warn(`[Mailer] dns.resolve4 failed for ${hostname}: ${e.message}. Using hostname as-is.`);
-  }
-  return hostname;
-}
-
-function createTransporter(host: string, port: number, secure: boolean) {
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    family: 4, // Belt-and-suspenders: also tell Node's net layer to use IPv4
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS?.replace(/\s+/g, ""), // Strip whitespace from App Passwords
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
-  } as any);
-}
-
-const smtpHostname = process.env.SMTP_HOST || "smtp.gmail.com";
-const defaultPort = Number(process.env.SMTP_PORT) || 587; // Default to 587 (STARTTLS) - safer on cloud
-const defaultSecure = defaultPort === 465; // Only true for port 465 (SMTPS)
-
-async function sendMailWithFallback(mailOptions: SendMailOptions): Promise<SentMessageInfo> {
-  // Pre-resolve to IPv4 — this is the critical fix for Render's IPv6-only DNS
-  const resolvedHost = await resolveToIPv4(smtpHostname);
-
-  try {
-    const transporter = createTransporter(resolvedHost, defaultPort, defaultSecure);
-    return await transporter.sendMail(mailOptions);
-  } catch (error: any) {
-    console.error(`[Mailer] Primary send (port ${defaultPort}, host ${resolvedHost}) failed:`, error?.message || error);
-
-    // Try the alternate port as a last resort
-    const fallbackPort = defaultPort === 465 ? 587 : 465;
-    const fallbackSecure = fallbackPort === 465;
-    console.log(`[Mailer] Attempting fallback to port ${fallbackPort}...`);
-    try {
-      const fallbackTransporter = createTransporter(resolvedHost, fallbackPort, fallbackSecure);
-      return await fallbackTransporter.sendMail(mailOptions);
-    } catch (fallbackError: any) {
-      console.error(`[Mailer] Fallback send (port ${fallbackPort}) also failed:`, fallbackError?.message || fallbackError);
-      throw fallbackError;
-    }
-  }
-}
-
+// Sender — update to a Resend-verified domain address once you verify your domain.
+// Until then, 'onboarding@resend.dev' works for testing (sends to any recipient).
+const FROM_ADDRESS =
+  process.env.EMAIL_FROM_ADDRESS || "Second Brain <onboarding@resend.dev>";
 
 /**
  * Generate a cryptographically secure 6-digit OTP code
@@ -89,10 +23,6 @@ export async function sendVerificationEmail(
   username: string,
   otpCode: string
 ): Promise<boolean> {
-  const senderEmail = process.env.SMTP_USER || "no-reply@secondbrain.app";
-  const fromName = process.env.EMAIL_FROM_NAME || "Second Brain";
-  const fromHeader = `"${fromName}" <${senderEmail}>`;
-
   const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -158,7 +88,6 @@ export async function sendVerificationEmail(
 </html>
   `.trim();
 
-  // Plain-text alternative (crucial for spam filters)
   const plainTextContent = `
 Second Brain - Email Verification
 
@@ -174,18 +103,20 @@ If you did not create a Second Brain account, please disregard this email.
   `.trim();
 
   try {
-    const info = await sendMailWithFallback({
-      from: fromHeader,
+    const { data, error } = await resend.emails.send({
+      from: FROM_ADDRESS,
       to: toEmail,
       subject: `${otpCode} is your Second Brain verification code`,
       text: plainTextContent,
       html: htmlContent,
-      headers: {
-        "X-Entity-Ref-ID": crypto.randomUUID(),
-      },
     });
 
-    console.log(`[Mailer] Verification email sent to ${toEmail}. MessageId: ${info.messageId}`);
+    if (error) {
+      console.error("[Mailer] Resend API error sending verification email:", error);
+      return false;
+    }
+
+    console.log(`[Mailer] Verification email sent to ${toEmail}. MessageId: ${data?.id}`);
     return true;
   } catch (error) {
     console.error("[Mailer] Failed to send verification email:", error);
@@ -201,10 +132,6 @@ export async function sendPasswordResetEmail(
   username: string,
   resetCode: string
 ): Promise<boolean> {
-  const senderEmail = process.env.SMTP_USER || "no-reply@secondbrain.app";
-  const fromName = process.env.EMAIL_FROM_NAME || "Second Brain";
-  const fromHeader = `"${fromName}" <${senderEmail}>`;
-
   const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -285,22 +212,23 @@ If you did not request a password reset, please disregard this email. Your accou
   `.trim();
 
   try {
-    const info = await sendMailWithFallback({
-      from: fromHeader,
+    const { data, error } = await resend.emails.send({
+      from: FROM_ADDRESS,
       to: toEmail,
       subject: `${resetCode} is your Second Brain password reset code`,
       text: plainTextContent,
       html: htmlContent,
-      headers: {
-        "X-Entity-Ref-ID": crypto.randomUUID(),
-      },
     });
 
-    console.log(`[Mailer] Password reset email sent to ${toEmail}. MessageId: ${info.messageId}`);
+    if (error) {
+      console.error("[Mailer] Resend API error sending password reset email:", error);
+      return false;
+    }
+
+    console.log(`[Mailer] Password reset email sent to ${toEmail}. MessageId: ${data?.id}`);
     return true;
   } catch (error) {
     console.error("[Mailer] Failed to send password reset email:", error);
     return false;
   }
 }
-
