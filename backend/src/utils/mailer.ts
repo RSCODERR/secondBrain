@@ -1,12 +1,51 @@
-import { Resend } from "resend";
 import crypto from "crypto";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-// Sender — update to a Resend-verified domain address once you verify your domain.
-// Until then, 'onboarding@resend.dev' works for testing (sends to any recipient).
-const FROM_ADDRESS =
-  process.env.EMAIL_FROM_ADDRESS || "Second Brain <onboarding@resend.dev>";
+// Verified sender in Brevo (must match the verified sender email)
+const SENDER = {
+  name: process.env.EMAIL_FROM_NAME || "Second Brain",
+  email: process.env.EMAIL_FROM_ADDRESS || "akasharmaraghav@gmail.com",
+};
+
+/**
+ * Send an email via Brevo transactional API (HTTP — not SMTP, works on Render free tier)
+ */
+async function sendMail(options: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<boolean> {
+  const body = JSON.stringify({
+    sender: SENDER,
+    to: [{ email: options.to }],
+    subject: options.subject,
+    htmlContent: options.html,
+    textContent: options.text,
+  });
+
+  const response = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      "api-key": BREVO_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`[Mailer] Brevo API error (${response.status}):`, errorBody);
+    return false;
+  }
+
+  const data = await response.json() as { messageId?: string };
+  console.log(`[Mailer] Email sent to ${options.to}. MessageId: ${data?.messageId}`);
+  return true;
+}
 
 /**
  * Generate a cryptographically secure 6-digit OTP code
@@ -35,9 +74,7 @@ export async function sendVerificationEmail(
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #070b08; padding: 40px 16px;">
     <tr>
       <td align="center">
-        <!-- Card Container -->
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #121c15; border: 1px solid #1a3321; border-radius: 20px; padding: 36px 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-          <!-- Header Logo -->
           <tr>
             <td align="center" style="padding-bottom: 24px;">
               <div style="display: inline-block; width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #047857); border-radius: 14px; text-align: center; line-height: 48px; font-size: 24px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);">
@@ -46,8 +83,6 @@ export async function sendVerificationEmail(
               <h1 style="margin: 14px 0 0 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Second Brain</h1>
             </td>
           </tr>
-
-          <!-- Welcome Message -->
           <tr>
             <td style="padding-bottom: 20px; text-align: center;">
               <h2 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600; color: #ffffff;">Confirm your email address</h2>
@@ -56,8 +91,6 @@ export async function sendVerificationEmail(
               </p>
             </td>
           </tr>
-
-          <!-- OTP Code Box -->
           <tr>
             <td align="center" style="padding: 24px 0;">
               <div style="display: inline-block; background-color: #09120b; border: 1.5px dashed #10b981; border-radius: 14px; padding: 16px 36px; letter-spacing: 10px; font-size: 32px; font-weight: 800; font-family: monospace; color: #10b981; text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);">
@@ -68,8 +101,6 @@ export async function sendVerificationEmail(
               </p>
             </td>
           </tr>
-
-          <!-- Security Notice -->
           <tr>
             <td style="border-top: 1px solid #1a3321; padding-top: 24px; text-align: center;">
               <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #6b7280;">
@@ -85,39 +116,17 @@ export async function sendVerificationEmail(
     </tr>
   </table>
 </body>
-</html>
-  `.trim();
+</html>`.trim();
 
-  const plainTextContent = `
-Second Brain - Email Verification
-
-Hello @${username},
-
-Your 6-digit verification code is:
-${otpCode}
-
-This code expires in 15 minutes.
-
-If you did not create a Second Brain account, please disregard this email.
-© ${new Date().getFullYear()} Second Brain
-  `.trim();
+  const plainText = `Second Brain - Email Verification\n\nHello @${username},\n\nYour 6-digit verification code is:\n${otpCode}\n\nThis code expires in 15 minutes.\n\nIf you did not create a Second Brain account, please disregard this email.\n© ${new Date().getFullYear()} Second Brain`.trim();
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: FROM_ADDRESS,
+    return await sendMail({
       to: toEmail,
       subject: `${otpCode} is your Second Brain verification code`,
-      text: plainTextContent,
       html: htmlContent,
+      text: plainText,
     });
-
-    if (error) {
-      console.error("[Mailer] Resend API error sending verification email:", error);
-      return false;
-    }
-
-    console.log(`[Mailer] Verification email sent to ${toEmail}. MessageId: ${data?.id}`);
-    return true;
   } catch (error) {
     console.error("[Mailer] Failed to send verification email:", error);
     return false;
@@ -144,9 +153,7 @@ export async function sendPasswordResetEmail(
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #070b08; padding: 40px 16px;">
     <tr>
       <td align="center">
-        <!-- Card Container -->
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #121c15; border: 1px solid #1a3321; border-radius: 20px; padding: 36px 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-          <!-- Header Logo -->
           <tr>
             <td align="center" style="padding-bottom: 24px;">
               <div style="display: inline-block; width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #047857); border-radius: 14px; text-align: center; line-height: 48px; font-size: 24px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);">
@@ -155,8 +162,6 @@ export async function sendPasswordResetEmail(
               <h1 style="margin: 14px 0 0 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Second Brain</h1>
             </td>
           </tr>
-
-          <!-- Message -->
           <tr>
             <td style="padding-bottom: 20px; text-align: center;">
               <h2 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600; color: #ffffff;">Password Reset Request</h2>
@@ -165,8 +170,6 @@ export async function sendPasswordResetEmail(
               </p>
             </td>
           </tr>
-
-          <!-- OTP Code Box -->
           <tr>
             <td align="center" style="padding: 24px 0;">
               <div style="display: inline-block; background-color: #09120b; border: 1.5px dashed #10b981; border-radius: 14px; padding: 16px 36px; letter-spacing: 10px; font-size: 32px; font-weight: 800; font-family: monospace; color: #10b981; text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);">
@@ -177,8 +180,6 @@ export async function sendPasswordResetEmail(
               </p>
             </td>
           </tr>
-
-          <!-- Security Notice -->
           <tr>
             <td style="border-top: 1px solid #1a3321; padding-top: 24px; text-align: center;">
               <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #6b7280;">
@@ -194,39 +195,17 @@ export async function sendPasswordResetEmail(
     </tr>
   </table>
 </body>
-</html>
-  `.trim();
+</html>`.trim();
 
-  const plainTextContent = `
-Second Brain - Password Reset Request
-
-Hello @${username},
-
-Your 6-digit password reset code is:
-${resetCode}
-
-This code expires in 15 minutes.
-
-If you did not request a password reset, please disregard this email. Your account remains secure.
-© ${new Date().getFullYear()} Second Brain
-  `.trim();
+  const plainText = `Second Brain - Password Reset Request\n\nHello @${username},\n\nYour 6-digit password reset code is:\n${resetCode}\n\nThis code expires in 15 minutes.\n\nIf you did not request a password reset, please disregard this email.\n© ${new Date().getFullYear()} Second Brain`.trim();
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: FROM_ADDRESS,
+    return await sendMail({
       to: toEmail,
       subject: `${resetCode} is your Second Brain password reset code`,
-      text: plainTextContent,
       html: htmlContent,
+      text: plainText,
     });
-
-    if (error) {
-      console.error("[Mailer] Resend API error sending password reset email:", error);
-      return false;
-    }
-
-    console.log(`[Mailer] Password reset email sent to ${toEmail}. MessageId: ${data?.id}`);
-    return true;
   } catch (error) {
     console.error("[Mailer] Failed to send password reset email:", error);
     return false;
