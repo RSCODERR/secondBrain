@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import "../App.css"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
@@ -18,6 +18,7 @@ import { LogoutIcon } from "../icons/logoutIcon"
 import { useAuth } from "../context/AuthContext"
 import { ThemeToggle } from "../components/ThemeToggle"
 import { useTheme } from "../context/ThemeContext"
+import { CommandPalette } from "../components/CommandPalette"
 
 function DashBoard() {
   const { logout } = useAuth()
@@ -28,6 +29,19 @@ function DashBoard() {
   const [filterType, setFilterType] = useState<FilterType>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [editContent, setEditContent] = useState<ContentItem | null>(null)
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+
+  // Global Cmd+K / Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setCmdPaletteOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
 
   const { contents, loading, error, refetch } = useContent()
 
@@ -118,6 +132,17 @@ function DashBoard() {
           onSuccess={() => { refetch(); setEditContent(null); }}
         />
 
+        <CommandPalette
+          open={cmdPaletteOpen}
+          onClose={() => setCmdPaletteOpen(false)}
+          contents={contents}
+          onAddContent={() => setModalOpen(true)}
+          onShareBrain={() => setShareOpen(true)}
+          onSetFilter={setFilterType}
+          onSetSearch={setSearchQuery}
+          onEditContent={handleEdit}
+        />
+
         {/* Action Controls & Search Bar */}
         <div className="flex flex-col gap-3 mb-6">
 
@@ -171,14 +196,14 @@ function DashBoard() {
             </div>
           </div>
 
-          {/* Row 2: Search bar (full width on mobile/tablet, comfortably spaced) */}
+          {/* Row 2: Search bar with Cmd+K hint */}
           <div className="relative w-full">
             <input
               type="text"
               placeholder="Search notes, videos, tweets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 text-sm bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d4a31]/25 dark:focus:ring-emerald-500/20 focus:border-[#2d4a31] dark:focus:border-emerald-500 shadow-xs text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 transition-all"
+              className="w-full pl-9 pr-28 py-2.5 text-sm bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d4a31]/25 dark:focus:ring-emerald-500/20 focus:border-[#2d4a31] dark:focus:border-emerald-500 shadow-xs text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 transition-all"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +215,7 @@ function DashBoard() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200 p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-[#1b2b20] cursor-pointer transition-colors"
@@ -199,6 +224,16 @@ function DashBoard() {
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
+              </button>
+            ) : (
+              <button
+                onClick={() => setCmdPaletteOpen(true)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 cursor-pointer group"
+                title="Open command palette (Ctrl+K)"
+              >
+                <kbd className="hidden sm:flex items-center gap-0.5 text-[10px] font-medium text-stone-400 dark:text-stone-600 bg-stone-100 dark:bg-[#1b2b20] px-1.5 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40 group-hover:text-stone-600 dark:group-hover:text-stone-400 transition-colors">
+                  <span className="text-[9px]">⌘</span>K
+                </kbd>
               </button>
             )}
           </div>
