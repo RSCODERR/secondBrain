@@ -69,7 +69,7 @@ const NoteIcon = () => (
 
 const VideoIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/>
+    <path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" />
   </svg>
 );
 
@@ -380,11 +380,10 @@ export function CommandPalette({
                       <button
                         key={item.id}
                         ref={(el) => { itemRefs.current[idx] = el; }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors duration-75 cursor-pointer ${
-                          isActive
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors duration-75 cursor-pointer ${isActive
                             ? "bg-stone-100 dark:bg-emerald-950/60"
                             : "hover:bg-stone-50 dark:hover:bg-emerald-950/30"
-                        }`}
+                          }`}
                         onClick={item.action}
                         onMouseMove={() => setActiveIndex(idx)}
                       >
@@ -393,11 +392,10 @@ export function CommandPalette({
 
                         {/* Label & Description */}
                         <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-medium truncate ${
-                            item.accent
+                          <div className={`text-sm font-medium truncate ${item.accent
                               ? "text-emerald-700 dark:text-emerald-400"
                               : "text-stone-800 dark:text-stone-100"
-                          }`}>
+                            }`}>
                             {item.label}
                           </div>
                           {item.description && (

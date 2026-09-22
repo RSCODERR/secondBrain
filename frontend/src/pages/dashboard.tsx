@@ -140,7 +140,6 @@ function DashBoard() {
           onShareBrain={() => setShareOpen(true)}
           onSetFilter={setFilterType}
           onSetSearch={setSearchQuery}
-          onEditContent={handleEdit}
         />
 
         {/* Action Controls & Search Bar */}
@@ -286,15 +285,15 @@ function DashBoard() {
                 {searchQuery
                   ? `No results for "${searchQuery}"`
                   : filterType
-                  ? `No ${filterType} items saved yet`
-                  : "Your Second Brain is ready"}
+                    ? `No ${filterType} items saved yet`
+                    : "Your Second Brain is ready"}
               </h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 max-w-sm mt-1 mb-5">
                 {searchQuery
                   ? "We couldn't find any content matching your search. Try different keywords or clear your search."
                   : filterType
-                  ? `You haven't saved any ${filterType} items yet. Click below to add your first one!`
-                  : "Collect YouTube videos, Twitter posts, web links, and notes all in one beautiful place."}
+                    ? `You haven't saved any ${filterType} items yet. Click below to add your first one!`
+                    : "Collect YouTube videos, Twitter posts, web links, and notes all in one beautiful place."}
               </p>
               {searchQuery ? (
                 <Button
