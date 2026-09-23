@@ -706,10 +706,17 @@ export default function LandingPage() {
               <div className="flex items-center gap-3 md:gap-4">
                 <Link to="/signin" className="hover:text-stone-200 transition-colors">Sign in</Link>
                 <Link to="/signup" className="hover:text-stone-200 transition-colors">Register</Link>
+                <a
+                  href="mailto:secondbrain.in.app@gmail.com?subject=Hello%20Second%20Brain"
+                  className="hover:text-stone-200 transition-colors"
+                >
+                  Contact
+                </a>
               </div>
             </div>
           </footer>
         </section>
+
 
       </div>
     </div>

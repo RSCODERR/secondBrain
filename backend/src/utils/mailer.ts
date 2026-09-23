@@ -211,3 +211,106 @@ export async function sendPasswordResetEmail(
     return false;
   }
 }
+
+/**
+ * Send a bug report email to the admin inbox
+ */
+export async function sendBugReportEmail(opts: {
+  category: string;
+  title: string;
+  description: string;
+  username: string;
+  userEmail: string;
+}): Promise<boolean> {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "secondbrain.in.app@gmail.com";
+
+  const categoryLabels: Record<string, string> = {
+    ui: "UI / Visual glitch",
+    auth: "Login / Signup issue",
+    content: "Content not saving / loading",
+    performance: "Slow / performance issue",
+    other: "Other",
+  };
+  const categoryLabel = categoryLabels[opts.category] ?? opts.category;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bug Report – Second Brain</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #070b08; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ecfdf5;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #070b08; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 540px; background-color: #121c15; border: 1px solid #1a3321; border-radius: 20px; padding: 36px 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <div style="display: inline-block; width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 14px; text-align: center; line-height: 48px; font-size: 24px; box-shadow: 0 0 20px rgba(245,158,11,0.4);">
+                🐛
+              </div>
+              <h1 style="margin: 14px 0 0 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Bug Report</h1>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #6b7280;">Second Brain · Internal Report</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0d150f; border: 1px solid #1e3424; border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1e3424;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Category</span>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; font-weight: 600; color: #f59e0b;">${categoryLabel}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1e3424;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Reported by</span>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; color: #6ee7b7;">@${opts.username} &lt;${opts.userEmail}&gt;</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1e3424;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Title</span>
+                    <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 700; color: #ffffff;">${opts.title}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 14px 18px;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Description</span>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.7; color: #d1d5db; white-space: pre-wrap;">${opts.description.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="border-top: 1px solid #1a3321; padding-top: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #4b5563;">
+                © ${new Date().getFullYear()} Second Brain · Auto-generated bug report
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+
+  const plainText = `Bug Report – Second Brain\n\nCategory: ${categoryLabel}\nReported by: @${opts.username} <${opts.userEmail}>\nTitle: ${opts.title}\n\nDescription:\n${opts.description}\n\n---\n© ${new Date().getFullYear()} Second Brain`;
+
+  try {
+    return await sendMail({
+      to: ADMIN_EMAIL,
+      subject: `[Bug · ${categoryLabel}] ${opts.title}`,
+      html: htmlContent,
+      text: plainText,
+    });
+  } catch (error) {
+    console.error("[Mailer] Failed to send bug report email:", error);
+    return false;
+  }
+}
+

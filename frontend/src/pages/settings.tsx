@@ -283,6 +283,42 @@ export default function Settings() {
     }
   };
 
+  /* ══════════════════════════════
+     Report a Bug section
+  ══════════════════════════════ */
+  const [bugCategory, setBugCategory] = useState("ui");
+  const [bugTitle, setBugTitle] = useState("");
+  const [bugDescription, setBugDescription] = useState("");
+  const [bugSent, setBugSent] = useState(false);
+  const [bugLoading, setBugLoading] = useState(false);
+  const [bugError, setBugError] = useState<string | null>(null);
+
+  const handleReportBug = async () => {
+    if (!bugTitle.trim() || !bugDescription.trim()) return;
+    setBugError(null);
+    setBugLoading(true);
+    try {
+      await axios.post(
+        `${BACKEND_URL}/api/v1/report-bug`,
+        { category: bugCategory, title: bugTitle.trim(), description: bugDescription.trim() },
+        { withCredentials: true }
+      );
+      setBugSent(true);
+      setBugTitle("");
+      setBugDescription("");
+      setBugCategory("ui");
+      setTimeout(() => setBugSent(false), 5000);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setBugError(err.response?.data?.error || "Failed to send report. Please try again.");
+      } else {
+        setBugError("Network error. Please check your connection.");
+      }
+    } finally {
+      setBugLoading(false);
+    }
+  };
+
   /* ── availability badge ── */
   const renderBadge = useCallback(() => {
     const trimmed = newUsername.trim();
@@ -386,6 +422,17 @@ export default function Settings() {
               </svg>
               Account Settings
             </div>
+
+            {/* Contact Us */}
+            <a
+              href="mailto:secondbrain.in.app@gmail.com?subject=Hello%20Second%20Brain"
+              className="flex items-center gap-3.5 py-2.5 cursor-pointer rounded-xl px-3.5 transition-all duration-200 ease-in-out text-stone-700 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-[#142017] dark:hover:text-emerald-200 text-sm font-medium"
+            >
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+              Contact Us
+            </a>
           </nav>
         </div>
 
@@ -726,6 +773,116 @@ export default function Settings() {
                   "Save Username"
                 )}
               </button>
+            </div>
+          </div>
+
+          {/* ══════════════════════════════
+               Report a Bug card
+          ══════════════════════════════ */}
+          <div className="bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/70 rounded-2xl shadow-xs overflow-hidden transition-colors">
+            <div className="px-5 py-4 border-b border-stone-100 dark:border-emerald-950/60 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0 mt-0.5">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">Report a Bug</h2>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Found something broken? Tell us and we'll fix it fast.</p>
+              </div>
+            </div>
+            <div className="px-5 py-5 flex flex-col gap-4">
+
+              {/* Category */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-wider mb-1.5">
+                  Category
+                </label>
+                <select
+                  value={bugCategory}
+                  onChange={(e) => setBugCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs cursor-pointer"
+                >
+                  <option value="ui">UI / Visual glitch</option>
+                  <option value="auth">Login / Signup issue</option>
+                  <option value="content">Content not saving / loading</option>
+                  <option value="performance">Slow / performance issue</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Bug Title */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-wider mb-1.5">
+                  Brief Title
+                </label>
+                <input
+                  type="text"
+                  value={bugTitle}
+                  onChange={(e) => setBugTitle(e.target.value)}
+                  placeholder="e.g. Cards don't load after refresh"
+                  maxLength={100}
+                  className="w-full px-3.5 py-2.5 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-wider mb-1.5">
+                  What happened?
+                </label>
+                <textarea
+                  value={bugDescription}
+                  onChange={(e) => setBugDescription(e.target.value)}
+                  placeholder="Describe the bug, what you expected to happen, and the steps to reproduce it..."
+                  rows={4}
+                  maxLength={1000}
+                  className="w-full px-3.5 py-2.5 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-xl transition-all placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:border-[#4a7a50] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#4a7a50]/10 dark:focus:ring-emerald-500/15 shadow-xs resize-none"
+                />
+                <div className="text-right text-[10px] text-stone-400 dark:text-stone-600 mt-1">{bugDescription.length}/1000</div>
+              </div>
+
+              {/* Success message */}
+              {bugSent && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  Report sent! We'll look into it as soon as possible. Thank you!
+                </div>
+              )}
+
+              {/* Error message */}
+              {bugError && (
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="10" /><path d="M12 8v4m0 4h.01" />
+                  </svg>
+                  {bugError}
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                onClick={handleReportBug}
+                disabled={bugLoading || !bugTitle.trim() || !bugDescription.trim()}
+                className="w-full sm:w-auto sm:self-start px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+              >
+                {bugLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                    </svg>
+                    Send Report
+                  </>
+                )}
+              </button>
+
             </div>
           </div>
 

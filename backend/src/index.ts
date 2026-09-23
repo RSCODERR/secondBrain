@@ -15,7 +15,7 @@ import jwt from "jsonwebtoken";
 import userMiddleware from "./middlewares/userMiddleware";
 import crypto from "crypto"; 
 import cors from "cors";
-import { generateOTP, sendVerificationEmail, sendPasswordResetEmail } from "./utils/mailer";
+import { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendBugReportEmail } from "./utils/mailer";
 
 const app = express();
 
@@ -857,6 +857,46 @@ app.get("/api/v1/health", async (_req, res) => {
             status: "error",
             error: error instanceof Error ? error.message : String(error)
         });
+    }
+});
+
+// ─── Report a Bug ────────────────────────────────────────────────────────────
+app.post("/api/v1/report-bug", userMiddleware, async (req, res) => {
+    const schema = z.object({
+        category: z.enum(["ui", "auth", "content", "performance", "other"]),
+        title: z.string().min(3, "Title too short").max(120, "Title too long"),
+        description: z.string().min(10, "Please provide more detail").max(2000, "Description too long"),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
+    }
+
+    const { category, title, description } = parsed.data;
+    // @ts-ignore
+    const userId = req.userId;
+
+    try {
+        const user = await User.findById(userId).select("username email");
+        if (!user) return res.status(401).json({ error: "User not found" });
+
+        const sent = await sendBugReportEmail({
+            category,
+            title,
+            description,
+            username: user.username,
+            userEmail: user.email,
+        });
+
+        if (!sent) {
+            return res.status(500).json({ error: "Failed to send report. Please try again." });
+        }
+
+        return res.status(200).json({ msg: "Bug report sent successfully. Thank you!" });
+    } catch (err) {
+        console.error("[Report Bug] Error:", err);
+        return res.status(500).json({ error: "An unexpected error occurred." });
     }
 });
 
