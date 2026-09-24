@@ -424,15 +424,15 @@ export default function Settings() {
             </div>
 
             {/* Contact Us */}
-            <a
-              href="mailto:secondbrain.in.app@gmail.com?subject=Hello%20Second%20Brain"
+            <Link
+              to="/contact"
               className="flex items-center gap-3.5 py-2.5 cursor-pointer rounded-xl px-3.5 transition-all duration-200 ease-in-out text-stone-700 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-[#142017] dark:hover:text-emerald-200 text-sm font-medium"
             >
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
               </svg>
               Contact Us
-            </a>
+            </Link>
           </nav>
         </div>
 

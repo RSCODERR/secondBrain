@@ -15,7 +15,7 @@ import jwt from "jsonwebtoken";
 import userMiddleware from "./middlewares/userMiddleware";
 import crypto from "crypto"; 
 import cors from "cors";
-import { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendBugReportEmail } from "./utils/mailer";
+import { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendBugReportEmail, sendContactEmail } from "./utils/mailer";
 
 const app = express();
 
@@ -897,6 +897,45 @@ app.post("/api/v1/report-bug", userMiddleware, async (req, res) => {
     } catch (err) {
         console.error("[Report Bug] Error:", err);
         return res.status(500).json({ error: "An unexpected error occurred." });
+    }
+});
+
+// ─── Contact Us Inbound Dispatcher ──────────────────────────────────────────
+app.post("/api/v1/contact", async (req, res) => {
+    const schema = z.object({
+        name: z.string().min(2, "Name must be at least 2 characters").max(60, "Name too long"),
+        email: z.string().email("Please provide a valid email address"),
+        subject: z.string().min(3, "Subject must be at least 3 characters").max(120, "Subject too long"),
+        category: z.string().max(40).optional(),
+        message: z.string().min(10, "Message must be at least 10 characters").max(3000, "Message too long"),
+    });
+
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
+    }
+
+    const { name, email, subject, category, message } = parsed.data;
+
+    try {
+        const sent = await sendContactEmail({
+            name,
+            email,
+            subject,
+            category,
+            message,
+        });
+
+        if (!sent) {
+            return res.status(500).json({
+                error: "Failed to dispatch message right now. You can email us directly at secondbrain.in.app@gmail.com."
+            });
+        }
+
+        return res.status(200).json({ msg: "Message dispatched successfully! We'll reply to your email soon." });
+    } catch (err) {
+        console.error("[Contact Us] Error:", err);
+        return res.status(500).json({ error: "An unexpected server error occurred." });
     }
 });
 

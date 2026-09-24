@@ -314,3 +314,103 @@ export async function sendBugReportEmail(opts: {
   }
 }
 
+/**
+ * Send a contact inquiry email to the admin inbox
+ */
+export async function sendContactEmail(opts: {
+  name: string;
+  email: string;
+  subject: string;
+  category?: string;
+  message: string;
+}): Promise<boolean> {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "secondbrain.in.app@gmail.com";
+  const categoryTag = opts.category ? `[${opts.category.toUpperCase()}] ` : "";
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Inquiry – Second Brain</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #070b08; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ecfdf5;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #070b08; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #121c15; border: 1px solid #1a3321; border-radius: 20px; padding: 36px 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <div style="display: inline-block; width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #047857); border-radius: 14px; text-align: center; line-height: 48px; font-size: 24px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);">
+                💬
+              </div>
+              <h1 style="margin: 14px 0 0 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">New Contact Message</h1>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #9ca3af;">Second Brain · Inbound Inquiry</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom: 20px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0d150f; border: 1px solid #1e3424; border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1e3424;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">From</span>
+                    <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #ffffff;">${opts.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")} <span style="font-weight: 400; color: #6ee7b7; font-size: 13px;">&lt;${opts.email}&gt;</span></p>
+                  </td>
+                </tr>
+                ${opts.category ? `
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1e3424;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Category</span>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; font-weight: 600; color: #10b981;">${opts.category}</p>
+                  </td>
+                </tr>
+                ` : ""}
+                <tr>
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #1e3424;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Subject</span>
+                    <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 700; color: #ffffff;">${opts.subject.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 16px 18px;">
+                    <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;">Message</span>
+                    <div style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.7; color: #d1d5db; white-space: pre-wrap; font-family: inherit;">${opts.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="border-top: 1px solid #1a3321; padding-top: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                Reply directly to <a href="mailto:${opts.email}" style="color: #6ee7b7; text-decoration: underline;">${opts.email}</a> to respond.
+              </p>
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #4b5563;">
+                © ${new Date().getFullYear()} Second Brain · Contact Form Dispatcher
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim();
+
+  const plainText = `Second Brain – Contact Inquiry\n\nFrom: ${opts.name} <${opts.email}>\nCategory: ${opts.category || "General"}\nSubject: ${opts.subject}\n\nMessage:\n${opts.message}\n\n---\nReply directly to ${opts.email}`;
+
+  try {
+    return await sendMail({
+      to: ADMIN_EMAIL,
+      subject: `${categoryTag}[Contact] ${opts.subject} – from ${opts.name}`,
+      html: htmlContent,
+      text: plainText,
+    });
+  } catch (error) {
+    console.error("[Mailer] Failed to send contact email:", error);
+    return false;
+  }
+}
+
+

@@ -243,6 +243,12 @@ export default function LandingPage() {
               <ThemeToggle />
             </div>
             <Link
+              to="/contact"
+              className="hidden sm:inline-block px-2.5 py-1 md:px-3 md:py-1.5 text-xs sm:text-sm font-semibold text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+            >
+              Contact
+            </Link>
+            <Link
               to="/signin"
               className="px-3 py-1 md:px-3.5 md:py-1.5 text-xs sm:text-sm font-semibold text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
             >
@@ -706,12 +712,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-3 md:gap-4">
                 <Link to="/signin" className="hover:text-stone-200 transition-colors">Sign in</Link>
                 <Link to="/signup" className="hover:text-stone-200 transition-colors">Register</Link>
-                <a
-                  href="mailto:secondbrain.in.app@gmail.com?subject=Hello%20Second%20Brain"
-                  className="hover:text-stone-200 transition-colors"
-                >
-                  Contact
-                </a>
+                <Link to="/contact" className="hover:text-stone-200 transition-colors">Contact</Link>
               </div>
             </div>
           </footer>
