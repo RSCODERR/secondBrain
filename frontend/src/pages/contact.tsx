@@ -154,30 +154,34 @@ export default function ContactPage() {
           </Link>
 
           {/* Right Navigation & Controls */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
+          <div className="flex items-center gap-2 sm:gap-3.5">
             <GitHubButton />
 
-            <ThemeToggle />
+            <div className="hidden sm:inline-flex items-center">
+              <ThemeToggle />
+            </div>
 
             {user ? (
               <button
                 onClick={() => navigate("/dashboard")}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white bg-stone-100 hover:bg-stone-200/70 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-stone-200 dark:border-emerald-900/70 transition-all cursor-pointer"
+                title="Return to Dashboard"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white bg-stone-100 hover:bg-stone-200/70 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-stone-200 dark:border-emerald-900/70 transition-all cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
-                Dashboard
+                <span className="hidden sm:inline">Dashboard</span>
               </button>
             ) : (
               <Link
                 to="/"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white bg-stone-100 hover:bg-stone-200/70 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-stone-200 dark:border-emerald-900/70 transition-all"
+                title="Return to Home"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold text-stone-700 dark:text-stone-200 hover:text-stone-900 dark:hover:text-white bg-stone-100 hover:bg-stone-200/70 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-stone-200 dark:border-emerald-900/70 transition-all"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
-                Home
+                <span className="hidden sm:inline">Home</span>
               </Link>
             )}
           </div>

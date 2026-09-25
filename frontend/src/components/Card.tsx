@@ -7,6 +7,9 @@ import { NoteIcon } from "../icons/noteIcon"
 import { ShareIcon } from "../icons/shareicon"
 import { TwitterIcon } from "../icons/twitterIcon"
 import { YoutubeIcon } from "../icons/youTubeIcon"
+import { RichMarkdown } from "./RichMarkdown"
+import axios from "axios"
+import { BACKEND_URL } from "../config"
 
 declare global {
   interface Window {
@@ -174,9 +177,36 @@ export const Card = ({
   onEdit
 }: CardProps) => {
   const [copied, setCopied] = useState(false)
+  const [noteText, setNoteText] = useState(note || "")
+
+  useEffect(() => {
+    setNoteText(note || "")
+  }, [note])
+
   const youtubeEmbedUrl = type === "youtube" ? getYouTubeEmbedUrl(link) : null
   const style = typeStyles[type] || typeStyles.note
   const hostname = getHostname(link)
+
+  const handleToggleTask = async (nextMarkdown: string) => {
+    setNoteText(nextMarkdown)
+    if (readonly || !id) return
+
+    try {
+      await axios.put(
+        `${BACKEND_URL}/api/v1/content/${id}`,
+        {
+          title,
+          type,
+          link: type === "note" ? null : link,
+          note: nextMarkdown,
+        },
+        { withCredentials: true }
+      )
+    } catch (err) {
+      console.error("Failed to persist task checkbox state:", err)
+      setNoteText(note || "")
+    }
+  }
 
   const handleShareCard = async () => {
     const cardShareUrl = `${window.location.origin}/share/card/${id}`
@@ -245,7 +275,7 @@ export const Card = ({
 
               {!readonly && onEdit && (
                 <button
-                  onClick={() => onEdit({ _id: id, title, link, note, type })}
+                  onClick={() => onEdit({ _id: id, title, link, note: noteText, type })}
                   className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer active:scale-95"
                   title="Edit card"
                   aria-label="Edit card"
@@ -313,7 +343,7 @@ export const Card = ({
 
             {!readonly && onEdit && (
               <button
-                onClick={() => onEdit({ _id: id, title, link, note, type })}
+                onClick={() => onEdit({ _id: id, title, link, note: noteText, type })}
                 className="p-1.5 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer"
                 title="Edit card"
                 aria-label="Edit card"
@@ -391,11 +421,12 @@ export const Card = ({
             </a>
           )}
 
-          {type === "note" && (
-            <div className="bg-stone-50/80 border border-stone-200/90 dark:bg-[#0c120e]/80 dark:border-emerald-950/80 rounded-xl p-3.5 sm:p-4 shadow-2xs">
-              <p className="whitespace-pre-wrap text-stone-800 dark:text-stone-200 text-sm leading-relaxed break-words font-sans">
-                {note}
-              </p>
+          {type === "note" && noteText && (
+            <div className="bg-stone-50/80 border border-stone-200/90 dark:bg-[#0c120e]/80 dark:border-emerald-950/80 rounded-xl p-3.5 sm:p-4 shadow-2xs overflow-hidden">
+              <RichMarkdown
+                content={noteText}
+                onToggleTask={!readonly ? handleToggleTask : undefined}
+              />
             </div>
           )}
         </div>

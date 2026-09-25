@@ -7,6 +7,7 @@ import { TwitterIcon } from "../icons/twitterIcon"
 import { LinkIcon } from "../icons/linkIcon"
 import { NoteIcon } from "../icons/noteIcon"
 import { BrainIcon } from "../icons/brainIcon"
+import { RichNoteEditor } from "./RichNoteEditor"
 import { BACKEND_URL } from "../config"
 import axios from "axios"
 
@@ -60,16 +61,16 @@ export function CreateContentModal({
 }: CreateContentModalProps) {
   const titleRef = useRef<HTMLInputElement | null>(null)
   const linkRef = useRef<HTMLInputElement | null>(null)
-  const noteRef = useRef<HTMLTextAreaElement | null>(null)
 
   const [type, setType] = useState<ContentType>("youtube")
+  const [note, setNote] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function addcontent() {
     const title = titleRef.current?.value.trim()
     const link = linkRef.current?.value.trim()
-    const note = noteRef.current?.value.trim()
+    const noteContent = note.trim()
 
     if (!title) {
       setError("Please give your content a title")
@@ -83,9 +84,8 @@ export function CreateContentModal({
       return
     }
 
-    if (type === "note" && !note) {
+    if (type === "note" && !noteContent) {
       setError("Please write some note content")
-      noteRef.current?.focus()
       return
     }
 
@@ -99,14 +99,14 @@ export function CreateContentModal({
           title,
           type,
           link: type === "note" ? null : link,
-          note: type === "note" ? note : null
+          note: type === "note" ? noteContent : null
         },
         { withCredentials: true }
       )
 
       if (titleRef.current) titleRef.current.value = ""
       if (linkRef.current) linkRef.current.value = ""
-      if (noteRef.current) noteRef.current.value = ""
+      setNote("")
 
       onSuccess()
       onClose()
@@ -127,7 +127,7 @@ export function CreateContentModal({
         onClick={onClose} 
       />
 
-      <div className="relative bg-white dark:bg-[#131d16] text-stone-800 dark:text-stone-100 rounded-3xl w-full max-w-lg p-5 sm:p-7 z-10 shadow-2xl border border-stone-100 dark:border-emerald-950/70 my-auto transform transition-all">
+      <div className={`relative bg-white dark:bg-[#131d16] text-stone-800 dark:text-stone-100 rounded-3xl w-full ${type === "note" ? "max-w-2xl" : "max-w-lg"} p-5 sm:p-7 z-10 shadow-2xl border border-stone-100 dark:border-emerald-950/70 my-auto transform transition-all duration-300 max-h-[92vh] overflow-y-auto`}>
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-3">
@@ -213,14 +213,19 @@ export function CreateContentModal({
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
-                Note Content
-              </label>
-              <textarea
-                ref={noteRef}
-                rows={5}
-                placeholder="Write your note, summary, reminders, or code snippets here..."
-                className="w-full px-4 py-3 text-sm text-stone-900 dark:text-stone-100 bg-white dark:bg-[#0e1611] border border-stone-200 dark:border-emerald-900/60 rounded-2xl resize-none transition-all duration-200 placeholder:text-stone-400 dark:placeholder:text-stone-500 hover:border-stone-300 dark:hover:border-emerald-700/60 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 shadow-xs"
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                  Note Content
+                </label>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  Markdown, LaTeX & Code
+                </span>
+              </div>
+              <RichNoteEditor
+                value={note}
+                onChange={setNote}
+                placeholder="Write your note in rich markdown... Supports $math$, ```code```, - [ ] tasks, and quotes."
+                minHeight="200px"
               />
             </div>
           )}

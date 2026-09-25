@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { BrowserRouter } from 'react-router-dom'
 import axios from 'axios'
+import 'katex/dist/katex.min.css'
 
 // Setup global request interceptor: attach Authorization header if token exists in localStorage
 axios.interceptors.request.use((config) => {
