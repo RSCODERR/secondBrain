@@ -10,6 +10,8 @@ import { YoutubeIcon } from "../icons/youTubeIcon"
 import { RichMarkdown } from "./RichMarkdown"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
+import { StarIcon } from "../icons/starIcon"
+import { getTagColorClass } from "../utils/tagColors"
 
 declare global {
   interface Window {
@@ -21,12 +23,19 @@ declare global {
   }
 }
 
+export interface TagItem {
+  _id?: string
+  title: string
+}
+
 interface CardProps {
   id: string
   title: string
   link?: string | null
   note?: string | null
   type: "twitter" | "youtube" | "link" | "note"
+  tags?: (TagItem | string)[]
+  pinned?: boolean
   readonly?: boolean
   onDelete?: (id: string) => void
   onEdit?: (content: {
@@ -35,7 +44,11 @@ interface CardProps {
     link?: string | null
     note?: string | null
     type: "twitter" | "youtube" | "link" | "note"
+    tags?: (TagItem | string)[]
+    pinned?: boolean
   }) => void
+  onTogglePin?: (id: string) => void
+  onTagClick?: (tag: string) => void
 }
 
 const getYouTubeEmbedUrl = (url: string | null | undefined): string | null => {
@@ -172,16 +185,25 @@ export const Card = ({
   link,
   note,
   type,
+  tags,
+  pinned,
   readonly,
   onDelete,
-  onEdit
+  onEdit,
+  onTogglePin,
+  onTagClick
 }: CardProps) => {
   const [copied, setCopied] = useState(false)
   const [noteText, setNoteText] = useState(note || "")
+  const [isPinned, setIsPinned] = useState(Boolean(pinned))
 
   useEffect(() => {
     setNoteText(note || "")
   }, [note])
+
+  useEffect(() => {
+    setIsPinned(Boolean(pinned))
+  }, [pinned])
 
   const youtubeEmbedUrl = type === "youtube" ? getYouTubeEmbedUrl(link) : null
   const style = typeStyles[type] || typeStyles.note
@@ -208,6 +230,32 @@ export const Card = ({
     }
   }
 
+  const handleTogglePin = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (readonly || !id) return
+    const next = !isPinned
+    setIsPinned(next)
+    if (onTogglePin) {
+      try {
+        await onTogglePin(id)
+      } catch (err) {
+        console.error("Failed to toggle pin state via callback:", err)
+        setIsPinned(!next)
+      }
+    } else {
+      try {
+        await axios.patch(`${BACKEND_URL}/api/v1/content/${id}/pin`, {}, { withCredentials: true })
+      } catch {
+        try {
+          await axios.put(`${BACKEND_URL}/api/v1/content/${id}/pin`, {}, { withCredentials: true })
+        } catch (err) {
+          console.error("Failed to toggle pin state:", err)
+          setIsPinned(!next)
+        }
+      }
+    }
+  }
+
   const handleShareCard = async () => {
     const cardShareUrl = `${window.location.origin}/share/card/${id}`
     try {
@@ -220,22 +268,58 @@ export const Card = ({
   }
 
   return (
-    <div className="group relative flex flex-col bg-white dark:bg-[#121c15] rounded-2xl border border-stone-200/90 dark:border-emerald-950/70 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-md dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:border-[#2d4a31]/30 dark:hover:border-emerald-600/40 transition-all duration-200 overflow-hidden w-full min-w-0 max-w-full h-auto">
-      {/* Top subtle category accent bar */}
-      <div className={`h-1 w-full bg-gradient-to-r ${style.accent}`} />
+    <div
+      className={`group relative flex flex-col bg-white dark:bg-[#121c15] rounded-2xl border transition-all duration-200 overflow-hidden w-full min-w-0 max-w-full h-auto ${
+        isPinned
+          ? "border-amber-400/90 dark:border-amber-500/50 shadow-[0_4px_20px_-2px_rgba(245,158,11,0.18)] dark:shadow-[0_4px_25px_rgba(245,158,11,0.22)] ring-1 ring-amber-400/30 dark:ring-amber-500/20"
+          : "border-stone-200/90 dark:border-emerald-950/70 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] hover:shadow-md dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:border-[#2d4a31]/30 dark:hover:border-emerald-600/40"
+      }`}
+    >
+      {/* Top category accent bar - Golden gradient if pinned */}
+      <div
+        className={`h-1 w-full bg-gradient-to-r ${
+          isPinned
+            ? "from-amber-400 via-amber-500 to-yellow-400"
+            : style.accent
+        }`}
+      />
 
       <div className="p-4 sm:p-5 flex flex-col flex-1 overflow-hidden min-w-0">
         {/* Header - 2 rows on mobile for readability, 1 row on desktop */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-          {/* Top Row on Mobile: Category Badge & Action Buttons */}
+          {/* Top Row on Mobile: Category Badge, Pinned Badge & Action Buttons */}
           <div className="flex items-center justify-between gap-2 w-full md:w-auto">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${style.badge} shrink-0`}>
-              {style.icon}
-              <span>{style.label}</span>
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${style.badge} shrink-0`}>
+                {style.icon}
+                <span>{style.label}</span>
+              </span>
+
+              {isPinned && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 shrink-0 shadow-2xs">
+                  <span>⭐</span>
+                  <span>Pinned</span>
+                </span>
+              )}
+            </div>
 
             {/* Action Toolbar on Mobile */}
             <div className="flex md:hidden items-center gap-1 shrink-0">
+              {!readonly && (
+                <button
+                  onClick={handleTogglePin}
+                  className={`p-2 rounded-xl transition-all cursor-pointer active:scale-95 ${
+                    isPinned
+                      ? "text-amber-500 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 shadow-2xs"
+                      : "text-stone-400 hover:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
+                  }`}
+                  title={isPinned ? "Unpin card" : "Pin to top / Add to favorites"}
+                  aria-label={isPinned ? "Unpin card" : "Pin to top / Add to favorites"}
+                >
+                  <StarIcon size="md" filled={isPinned} />
+                </button>
+              )}
+
               {link && (
                 <a 
                   href={link} 
@@ -275,7 +359,7 @@ export const Card = ({
 
               {!readonly && onEdit && (
                 <button
-                  onClick={() => onEdit({ _id: id, title, link, note: noteText, type })}
+                  onClick={() => onEdit({ _id: id, title, link, note: noteText, type, tags, pinned: isPinned })}
                   className="p-2 rounded-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer active:scale-95"
                   title="Edit card"
                   aria-label="Edit card"
@@ -304,6 +388,21 @@ export const Card = ({
 
           {/* Desktop Action Toolbar */}
           <div className="hidden md:flex items-center gap-1 shrink-0">
+            {!readonly && (
+              <button
+                onClick={handleTogglePin}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer active:scale-90 ${
+                  isPinned
+                    ? "text-amber-500 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 shadow-2xs"
+                    : "text-stone-400 hover:text-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
+                }`}
+                title={isPinned ? "Unpin card" : "Pin to top / Add to favorites"}
+                aria-label={isPinned ? "Unpin card" : "Pin to top / Add to favorites"}
+              >
+                <StarIcon size="md" filled={isPinned} />
+              </button>
+            )}
+
             {link && (
               <a 
                 href={link} 
@@ -343,7 +442,7 @@ export const Card = ({
 
             {!readonly && onEdit && (
               <button
-                onClick={() => onEdit({ _id: id, title, link, note: noteText, type })}
+                onClick={() => onEdit({ _id: id, title, link, note: noteText, type, tags, pinned: isPinned })}
                 className="p-1.5 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:bg-[#18261e] transition-colors cursor-pointer"
                 title="Edit card"
                 aria-label="Edit card"
@@ -427,6 +526,37 @@ export const Card = ({
                 content={noteText}
                 onToggleTask={!readonly ? handleToggleTask : undefined}
               />
+            </div>
+          )}
+
+          {/* Tag Pills */}
+          {tags && tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-stone-100 dark:border-emerald-950/60">
+              {tags.map((tag) => {
+                const tagTitle = typeof tag === "string" ? tag : tag.title;
+                if (!tagTitle) return null;
+                return (
+                  <button
+                    key={tagTitle}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTagClick?.(tagTitle);
+                    }}
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide border shadow-2xs transition-all ${getTagColorClass(
+                      tagTitle
+                    )} ${
+                      onTagClick
+                        ? "cursor-pointer hover:scale-105 active:scale-95"
+                        : "cursor-default"
+                    }`}
+                    title={onTagClick ? `Filter by #${tagTitle}` : undefined}
+                  >
+                    <span className="opacity-60 text-[10px]">#</span>
+                    <span>{tagTitle}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

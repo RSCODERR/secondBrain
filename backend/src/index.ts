@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import connectDB from "./database/database";
 import { User } from "./models/user.model";
 import { content } from "./models/content.model";
+import { Tag } from "./models/tag.model";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -38,7 +39,7 @@ app.use(cors({
         return callback(null, true);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Set-Cookie']
 }));
@@ -504,9 +505,70 @@ app.post("/api/v1/logout", (req, res) => {
     return res.json({ message: "Logged out successfully" });
 });
 
+// Helper to resolve tag titles into ObjectIds
+async function resolveTagIds(rawTags: any[]): Promise<mongoose.Types.ObjectId[]> {
+  if (!Array.isArray(rawTags)) return [];
+  const tagIds: mongoose.Types.ObjectId[] = [];
+
+  // Flatten any comma-separated strings
+  const expanded: any[] = [];
+  for (const item of rawTags) {
+    if (typeof item === "string" && item.includes(",")) {
+      item.split(",").forEach((s) => expanded.push(s));
+    } else {
+      expanded.push(item);
+    }
+  }
+
+  for (const item of expanded) {
+    if (!item) continue;
+
+    // If item is already an ObjectId or object with _id
+    if (typeof item === "object" && item._id && mongoose.Types.ObjectId.isValid(item._id)) {
+      const idStr = item._id.toString();
+      if (!tagIds.some((id) => id.toString() === idStr)) {
+        tagIds.push(new mongoose.Types.ObjectId(idStr));
+      }
+      continue;
+    }
+
+    if (typeof item === "string" && mongoose.Types.ObjectId.isValid(item) && item.length === 24) {
+      const byId = await Tag.findById(item);
+      if (byId) {
+        if (!tagIds.some((id) => id.toString() === byId._id.toString())) {
+          tagIds.push(byId._id as mongoose.Types.ObjectId);
+        }
+        continue;
+      }
+    }
+
+    let title = "";
+    if (typeof item === "string") {
+      title = item.trim().toLowerCase();
+    } else if (item && typeof item === "object" && item.title) {
+      title = String(item.title).trim().toLowerCase();
+    }
+    title = title.replace(/^#+/, "").trim();
+    if (!title) continue;
+
+    let tagDoc = await Tag.findOne({ title });
+    if (!tagDoc) {
+      try {
+        tagDoc = await Tag.create({ title });
+      } catch {
+        tagDoc = await Tag.findOne({ title });
+      }
+    }
+    if (tagDoc && !tagIds.some((id) => id.toString() === tagDoc._id.toString())) {
+      tagIds.push(tagDoc._id as mongoose.Types.ObjectId);
+    }
+  }
+  return tagIds;
+}
+
 app.post("/api/v1/content", userMiddleware, async (req, res) => {
   try {
-    const { title, link, note, type } = req.body;
+    const { title, link, note, type, tags: rawTags, pinned } = req.body;
 
     // @ts-ignore
     if (!req.userId) {
@@ -531,18 +593,24 @@ app.post("/api/v1/content", userMiddleware, async (req, res) => {
       });
     }
 
-    await content.create({
+    const tagIds = await resolveTagIds(rawTags);
+
+    const createdContent = await content.create({
       title,
       type,
       link: type === "note" ? null : link,
       note: type === "note" ? note : null,
       // @ts-ignore
       userId: req.userId,
-      tags: []
+      tags: tagIds,
+      pinned: Boolean(pinned)
     });
 
+    const populated = await content.findById(createdContent._id).populate("tags", "title");
+
     res.json({
-      message: "content added successfully"
+      message: "content added successfully",
+      content: populated
     });
 
   } catch (error) {
@@ -559,7 +627,9 @@ app.get("/api/v1/content", userMiddleware, async (req, res) => {
         // @ts-ignore
         const userId = req.userId;
 
-        const contents = await content.find({ userId });
+        const contents = await content.find({ userId })
+          .populate("tags", "title")
+          .sort({ pinned: -1, _id: -1 });
 
         return res.json({ contents });
 
@@ -569,7 +639,7 @@ app.get("/api/v1/content", userMiddleware, async (req, res) => {
         message: "Internal server error"
       });
     }
-    });
+});
 
 
 app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
@@ -605,7 +675,7 @@ app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
         const contentId = req.params.id;
         // @ts-ignore
         const userId = req.userId;
-        const { title, link, type, note } = req.body;
+        const { title, link, type, note, tags: rawTags, pinned } = req.body;
 
         if (!title || !type) {
             return res.status(400).json({
@@ -625,16 +695,26 @@ app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
             });
         }
 
+        const updateData: any = {
+            title,
+            type,
+            link: type === "note" ? null : link,
+            note: type === "note" ? note : null
+        };
+
+        if (rawTags !== undefined) {
+            updateData.tags = await resolveTagIds(rawTags);
+        }
+
+        if (pinned !== undefined) {
+            updateData.pinned = Boolean(pinned);
+        }
+
         const updated = await content.findOneAndUpdate(
             { _id: contentId, userId },
-            {
-                title,
-                type,
-                link: type === "note" ? null : link,
-                note: type === "note" ? note : null
-            },
+            updateData,
             { new: true }
-        );
+        ).populate("tags", "title");
 
         if (!updated) {
             return res.status(404).json({
@@ -652,6 +732,69 @@ app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
         return res.status(500).json({
             message: "internal server error"
         });
+    }
+});
+
+const togglePinHandler = async (req: express.Request, res: express.Response) => {
+    try {
+        const contentId = req.params.id;
+        // @ts-ignore
+        const userId = req.userId;
+
+        const item = await content.findOne({ _id: contentId, userId });
+        if (!item) {
+            return res.status(404).json({ message: "Content not found or not authorized" });
+        }
+
+        item.pinned = !item.pinned;
+        await item.save();
+
+        const populated = await content.findById(item._id).populate("tags", "title");
+
+        return res.json({
+            message: item.pinned ? "Pinned to top" : "Unpinned",
+            pinned: item.pinned,
+            content: populated
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+app.patch("/api/v1/content/:id/pin", userMiddleware, togglePinHandler);
+app.put("/api/v1/content/:id/pin", userMiddleware, togglePinHandler);
+
+app.get("/api/v1/tags", userMiddleware, async (req, res) => {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+
+        const userContents = await content.find({ userId }).select("tags");
+        const tagIdCountMap = new Map<string, number>();
+
+        userContents.forEach((c) => {
+            if (Array.isArray(c.tags)) {
+                c.tags.forEach((tagId: any) => {
+                    const idStr = tagId.toString();
+                    tagIdCountMap.set(idStr, (tagIdCountMap.get(idStr) || 0) + 1);
+                });
+            }
+        });
+
+        const tagIds = Array.from(tagIdCountMap.keys());
+        const tagDocs = await Tag.find({ _id: { $in: tagIds } }).sort({ title: 1 });
+
+        const tagsWithCount = tagDocs.map((t) => ({
+            _id: t._id,
+            title: t.title,
+            count: tagIdCountMap.get(t._id.toString()) || 0
+        }));
+
+        return res.json({ tags: tagsWithCount });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
 
@@ -702,7 +845,9 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
 
         const contents = await content.find({
           userId: user._id
-        });
+        })
+          .populate("tags", "title")
+          .sort({ pinned: -1, _id: -1 });
 
         return res.json({
           username: user.username,
@@ -715,12 +860,14 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
           message: "Internal server error"
         });
     }
-    });
+});
 
 app.get("/api/v1/card/:id", async (req, res) => {
     try {
         const contentId = req.params.id;
-        const item = await content.findById(contentId).populate("userId", "username");
+        const item = await content.findById(contentId)
+          .populate("userId", "username")
+          .populate("tags", "title");
 
         if (!item) {
             return res.status(404).json({ message: "Card not found" });
@@ -735,7 +882,9 @@ app.get("/api/v1/card/:id", async (req, res) => {
                 title: item.title,
                 type: item.type,
                 link: item.link,
-                note: item.note
+                note: item.note,
+                tags: item.tags,
+                pinned: item.pinned
             },
             username
         });

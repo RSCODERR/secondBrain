@@ -1,4 +1,5 @@
 import { Schema, Types, model } from "mongoose";
+import "./tag.model";
 
 const contentTypes = ["link", "note", "youtube", "twitter"];
 
@@ -27,8 +28,13 @@ const contentSchema = new Schema({
 
   tags: [{
     type: Types.ObjectId,
-    ref: "Tag"
+    ref: "tag"
   }],
+
+  pinned: {
+    type: Boolean,
+    default: false
+  },
 
   userId: {
     type: Types.ObjectId,

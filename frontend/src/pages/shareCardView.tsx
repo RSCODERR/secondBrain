@@ -14,6 +14,8 @@ interface SharedCardData {
   link?: string | null
   note?: string | null
   type: "twitter" | "youtube" | "link" | "note"
+  tags?: any[]
+  pinned?: boolean
 }
 
 export default function ShareCardView() {
@@ -99,6 +101,8 @@ export default function ShareCardView() {
             link={content.link}
             note={content.note}
             type={content.type}
+            tags={content.tags}
+            pinned={content.pinned}
             readonly
           />
 

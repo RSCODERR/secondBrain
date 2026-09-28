@@ -4,19 +4,34 @@ import { LinkIcon } from "../icons/linkIcon";
 import { NoteIcon } from "../icons/noteIcon";
 import { TwitterIcon } from "../icons/twitterIcon";
 import { YoutubeIcon } from "../icons/youTubeIcon";
+import { StarIcon } from "../icons/starIcon";
+import { TagIcon } from "../icons/tagIcon";
 import { CrossIcon } from "../icons/crossIcon";
 import { LogoutIcon } from "../icons/logoutIcon";
 import { SettingsIcon } from "../icons/settingsIcon";
 import { SidebarItems } from "./SidebarItem";
 import { useAuth } from "../context/AuthContext";
+import { getTagDotClass } from "../utils/tagColors";
 
 export type FilterType = "twitter" | "youtube" | "link" | "note" | null;
+
+export interface TagCount {
+  title: string;
+  count: number;
+}
 
 interface SideBarProps {
   onSelect: (type: FilterType) => void;
   selectedType?: FilterType;
   isOpen?: boolean;
   onClose?: () => void;
+  showOnlyPinned?: boolean;
+  onToggleFavorites?: () => void;
+  pinnedCount?: number;
+  availableTags?: TagCount[];
+  selectedTags?: string[];
+  onToggleTag?: (tag: string) => void;
+  onClearTags?: () => void;
 }
 
 export function SideBar(props: SideBarProps) {
@@ -53,7 +68,7 @@ export function SideBar(props: SideBarProps) {
           props.isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:shadow-none"
         }`}
       >
-        <div>
+        <div className="flex-1 overflow-y-auto pr-1">
           <div className="flex text-2xl sm:text-3xl items-center justify-between">
             <Link
               to="/dashboard"
@@ -78,7 +93,29 @@ export function SideBar(props: SideBarProps) {
             </button>
           </div>
 
-          <div className="pt-8 flex flex-col gap-1.5">
+          {/* Core Categories & Favorites */}
+          <div className="pt-7 flex flex-col gap-1.5">
+            <SidebarItems
+              onclick={() => {
+                props.onToggleFavorites?.();
+                props.onClose?.();
+              }}
+              text="Favorites"
+              icon={
+                <StarIcon
+                  size="md"
+                  filled={props.showOnlyPinned}
+                  className={
+                    props.showOnlyPinned
+                      ? "text-amber-500"
+                      : "text-amber-500/80 dark:text-amber-400/80"
+                  }
+                />
+              }
+              active={props.showOnlyPinned}
+              count={props.pinnedCount}
+            />
+
             <SidebarItems
               onclick={() => handleCategoryClick("twitter")}
               text="Twitter"
@@ -106,6 +143,75 @@ export function SideBar(props: SideBarProps) {
               icon={<NoteIcon />}
               active={props.selectedType === "note"}
             />
+          </div>
+
+          {/* ─── Tags Section ─── */}
+          <div className="pt-6 mt-4 border-t border-stone-200 dark:border-emerald-950/70">
+            <div className="flex items-center justify-between px-1 mb-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                <TagIcon size="sm" className="opacity-80" />
+                <span>Tags</span>
+                {props.availableTags && props.availableTags.length > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-stone-200/70 dark:bg-[#18261e] text-stone-600 dark:text-stone-400 font-semibold">
+                    {props.availableTags.length}
+                  </span>
+                )}
+              </div>
+
+              {props.selectedTags && props.selectedTags.length > 0 && (
+                <button
+                  type="button"
+                  onClick={props.onClearTags}
+                  className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer"
+                  title="Clear tag filters"
+                >
+                  Clear ({props.selectedTags.length})
+                </button>
+              )}
+            </div>
+
+            {/* Tags List */}
+            {props.availableTags && props.availableTags.length > 0 ? (
+              <div className="flex flex-col gap-1 max-h-52 overflow-y-auto pr-1">
+                {props.availableTags.map((t) => {
+                  const isSelected = props.selectedTags?.includes(t.title);
+                  return (
+                    <button
+                      key={t.title}
+                      type="button"
+                      onClick={() => props.onToggleTag?.(t.title)}
+                      className={`flex items-center justify-between w-full py-1.5 px-3 rounded-xl text-xs transition-all cursor-pointer select-none ${
+                        isSelected
+                          ? "bg-emerald-50 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 font-semibold border border-emerald-300/80 dark:border-emerald-800/80 shadow-2xs"
+                          : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#142017] border border-transparent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${getTagDotClass(
+                            t.title
+                          )}`}
+                        />
+                        <span className="truncate">#{t.title}</span>
+                      </div>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                          isSelected
+                            ? "bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200 font-bold"
+                            : "bg-stone-100 text-stone-500 dark:bg-[#18261e] dark:text-stone-400 font-medium"
+                        }`}
+                      >
+                        {t.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="px-2 py-3 text-xs text-stone-400 dark:text-stone-500 italic">
+                No tags added yet. Add tags when creating or editing notes.
+              </div>
+            )}
           </div>
         </div>
 

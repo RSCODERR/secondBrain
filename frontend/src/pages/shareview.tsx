@@ -20,6 +20,8 @@ interface ContentItem {
   link?: string | null
   note?: string | null
   type: "youtube" | "twitter" | "link" | "note"
+  tags?: any[]
+  pinned?: boolean
 }
 
 export default function ShareView() {
@@ -266,7 +268,7 @@ export default function ShareView() {
         {/* Card Grid */}
         {filteredContents.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredContents.map(({ _id, title, link, type, note }) => (
+            {filteredContents.map(({ _id, title, link, type, note, tags, pinned }: any) => (
               <Card
                 key={_id}
                 id={_id}
@@ -274,6 +276,8 @@ export default function ShareView() {
                 link={link}
                 note={note}
                 type={type}
+                tags={tags}
+                pinned={pinned}
                 readonly
               />
             ))}

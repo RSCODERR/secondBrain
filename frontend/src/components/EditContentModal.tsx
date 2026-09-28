@@ -7,11 +7,19 @@ import { TwitterIcon } from "../icons/twitterIcon"
 import { LinkIcon } from "../icons/linkIcon"
 import { NoteIcon } from "../icons/noteIcon"
 import { EditIcon } from "../icons/editIcon"
+import { StarIcon } from "../icons/starIcon"
 import { RichNoteEditor } from "./RichNoteEditor"
+import { TagInput } from "./TagInput"
+import { normalizeTag } from "../utils/tagColors"
 import { BACKEND_URL } from "../config"
 import axios from "axios"
 
 export type ContentType = "youtube" | "twitter" | "link" | "note"
+
+export interface TagItem {
+  _id?: string
+  title: string
+}
 
 export interface ContentItem {
   _id: string
@@ -19,6 +27,8 @@ export interface ContentItem {
   link?: string | null
   note?: string | null
   type: ContentType
+  tags?: (TagItem | string)[]
+  pinned?: boolean
 }
 
 interface EditContentModalProps {
@@ -73,6 +83,10 @@ export function EditContentModal({
   const [type, setType] = useState<ContentType>("youtube")
   const [link, setLink] = useState("")
   const [note, setNote] = useState("")
+  const [tags, setTags] = useState<string[]>([])
+  const [pendingTag, setPendingTag] = useState("")
+  const [pinned, setPinned] = useState(false)
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -82,9 +96,29 @@ export function EditContentModal({
       setType(content.type || "youtube")
       setLink(content.link || "")
       setNote(content.note || "")
+      setTags(
+        (content.tags || [])
+          .map((t: any) => (typeof t === "string" ? t : t.title || ""))
+          .filter(Boolean)
+      )
+      setPendingTag("")
+      setPinned(Boolean(content.pinned))
       setError(null)
     }
   }, [content, open])
+
+  useEffect(() => {
+    if (open) {
+      axios
+        .get(`${BACKEND_URL}/api/v1/tags`, { withCredentials: true })
+        .then((res) => {
+          if (res.data?.tags) {
+            setSuggestedTags(res.data.tags.map((t: any) => t.title))
+          }
+        })
+        .catch(() => {})
+    }
+  }, [open])
 
   async function handleUpdate() {
     if (!content) return
@@ -108,6 +142,20 @@ export function EditContentModal({
       return
     }
 
+    // Merge any pending uncommitted tag string
+    const finalTags = [...tags]
+    if (pendingTag.trim()) {
+      const extraParts = pendingTag
+        .split(/[,]+/)
+        .map((p) => normalizeTag(p))
+        .filter(Boolean)
+      for (const ep of extraParts) {
+        if (!finalTags.includes(ep)) {
+          finalTags.push(ep)
+        }
+      }
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -118,7 +166,9 @@ export function EditContentModal({
           title: trimmedTitle,
           type,
           link: type === "note" ? null : trimmedLink,
-          note: type === "note" ? trimmedNote : null
+          note: type === "note" ? trimmedNote : null,
+          tags: finalTags,
+          pinned
         },
         { withCredentials: true }
       )
@@ -234,6 +284,64 @@ export function EditContentModal({
               />
             </div>
           )}
+
+          {/* Tags Input */}
+          <div className="pt-1">
+            <TagInput
+              tags={tags}
+              onChange={setTags}
+              onPendingChange={setPendingTag}
+              suggestedTags={suggestedTags}
+              placeholder="Add tags (e.g. work, design, reading)..."
+            />
+          </div>
+
+          {/* Pin to top / Favorite toggle */}
+          <div
+            className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none ${
+              pinned
+                ? "border-amber-400/80 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-600/50 shadow-2xs"
+                : "border-stone-200/80 dark:border-emerald-950/70 bg-stone-50/50 dark:bg-[#0e1710] hover:border-amber-300 dark:hover:border-amber-600/40"
+            }`}
+            onClick={() => setPinned(!pinned)}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  pinned
+                    ? "bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400"
+                    : "bg-stone-200/60 dark:bg-[#152319] text-stone-400 dark:text-stone-500"
+                }`}
+              >
+                <StarIcon size="md" filled={pinned} />
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                  <span>Pin to Top & Favorites</span>
+                  {pinned && (
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                  Lock this card at the top of your dashboard for quick daily access
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                pinned ? "bg-amber-500" : "bg-stone-300 dark:bg-stone-700"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  pinned ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
 
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium">

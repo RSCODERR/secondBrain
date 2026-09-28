@@ -10,6 +10,8 @@ type ContentItem = {
   title: string;
   note?: string;
   link?: string;
+  tags?: any[];
+  pinned?: boolean;
 };
 
 type FilterType = "note" | "youtube" | "twitter" | "link" | null;
@@ -171,7 +173,11 @@ export function CommandPalette({
           (c) =>
             c.title.toLowerCase().includes(q) ||
             (c.note && c.note.toLowerCase().includes(q)) ||
-            c.type.toLowerCase().includes(q)
+            c.type.toLowerCase().includes(q) ||
+            (c.tags &&
+              c.tags.some((t: any) =>
+                (typeof t === "string" ? t : t.title || "").toLowerCase().includes(q)
+              ))
         )
         .slice(0, 6);
 
