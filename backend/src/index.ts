@@ -17,6 +17,7 @@ import userMiddleware from "./middlewares/userMiddleware";
 import crypto from "crypto"; 
 import cors from "cors";
 import { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendBugReportEmail, sendContactEmail } from "./utils/mailer";
+import { askBrain, summarizeCard } from "./services/aiService";
 
 const app = express();
 
@@ -795,6 +796,92 @@ app.get("/api/v1/tags", userMiddleware, async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+app.post("/api/v1/ai/chat", userMiddleware, async (req, res) => {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+        const { message, history } = req.body;
+
+        if (!message || typeof message !== "string" || !message.trim()) {
+            return res.status(400).json({ message: "Message is required" });
+        }
+
+        // Fetch user's content to provide brain context
+        const userContents = await content.find({ userId })
+            .populate("tags", "title")
+            .sort({ pinned: -1, _id: -1 })
+            .limit(60);
+
+        const result = await askBrain({
+            message: message.trim(),
+            history: Array.isArray(history) ? history : [],
+            contents: userContents
+        });
+
+        return res.json({
+            reply: result.reply,
+            referencedCards: result.referencedCards,
+            provider: result.providerUsed,
+            model: result.modelUsed
+        });
+
+    } catch (error: any) {
+        console.error("AI Chat Error:", error);
+        return res.status(500).json({
+            message: error?.message || "Failed to generate AI response. Please try again."
+        });
+    }
+});
+
+app.post("/api/v1/ai/summarize", async (req, res) => {
+    try {
+        const { cardId, title, type, link, note, tags } = req.body;
+
+        let cardTitle = title;
+        let cardType = type;
+        let cardLink = link;
+        let cardNote = note;
+        let cardTags = tags;
+
+        if (cardId) {
+            const existing = await content.findById(cardId).populate("tags", "title");
+            if (existing) {
+                cardTitle = existing.title || cardTitle;
+                cardType = existing.type || cardType;
+                cardLink = existing.link || cardLink;
+                cardNote = existing.note || cardNote;
+                cardTags = existing.tags || cardTags;
+            }
+        }
+
+        if (!cardTitle && !cardNote && !cardLink) {
+            return res.status(400).json({
+                message: "Card title, note, or link is required for summarization"
+            });
+        }
+
+        const result = await summarizeCard({
+            title: cardTitle || "Untitled Memory",
+            type: cardType || "note",
+            link: cardLink,
+            note: cardNote,
+            tags: cardTags
+        });
+
+        return res.json({
+            summary: result.summary,
+            provider: result.provider,
+            model: result.model
+        });
+
+    } catch (error: any) {
+        console.error("AI Summarize Error:", error);
+        return res.status(500).json({
+            message: error?.message || "Failed to generate AI summary. Please try again."
+        });
     }
 });
 

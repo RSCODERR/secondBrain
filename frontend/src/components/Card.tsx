@@ -11,6 +11,7 @@ import { RichMarkdown } from "./RichMarkdown"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
 import { StarIcon } from "../icons/starIcon"
+import { SparkleIcon } from "../icons/sparkleIcon"
 import { getTagColorClass } from "../utils/tagColors"
 
 declare global {
@@ -256,6 +257,14 @@ export const Card = ({
     }
   }
 
+  const [showSummary, setShowSummary] = useState(false)
+  const [summary, setSummary] = useState<string | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [summaryProvider, setSummaryProvider] = useState<string | null>(null)
+  const [summaryModel, setSummaryModel] = useState<string | null>(null)
+  const [summaryCopied, setSummaryCopied] = useState(false)
+
   const handleShareCard = async () => {
     const cardShareUrl = `${window.location.origin}/share/card/${id}`
     try {
@@ -267,8 +276,63 @@ export const Card = ({
     }
   }
 
+  const fetchSummary = async () => {
+    setSummaryLoading(true)
+    setSummaryError(null)
+    try {
+      const res = await axios.post(
+        `${BACKEND_URL}/api/v1/ai/summarize`,
+        {
+          cardId: id,
+          title,
+          type,
+          link,
+          note: noteText,
+          tags,
+        },
+        { withCredentials: true }
+      )
+      if (res.data?.summary) {
+        setSummary(res.data.summary)
+        setSummaryProvider(res.data.provider || null)
+        setSummaryModel(res.data.model || null)
+      } else {
+        setSummaryError("Could not generate summary.")
+      }
+    } catch (err: any) {
+      console.error("Failed to generate summary:", err)
+      setSummaryError(
+        err.response?.data?.message || "Failed to generate AI summary. Please try again."
+      )
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
+
+  const handleToggleSummary = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const next = !showSummary
+    setShowSummary(next)
+    if (next && !summary && !summaryLoading) {
+      fetchSummary()
+    }
+  }
+
+  const handleCopySummary = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!summary) return
+    try {
+      await navigator.clipboard.writeText(summary)
+      setSummaryCopied(true)
+      setTimeout(() => setSummaryCopied(false), 2000)
+    } catch (err) {
+      console.error("Failed to copy summary:", err)
+    }
+  }
+
   return (
     <div
+      id={id}
       className={`group relative flex flex-col bg-white dark:bg-[#121c15] rounded-2xl border transition-all duration-200 overflow-hidden w-full min-w-0 max-w-full h-auto ${
         isPinned
           ? "border-amber-400/90 dark:border-amber-500/50 shadow-[0_4px_20px_-2px_rgba(245,158,11,0.18)] dark:shadow-[0_4px_25px_rgba(245,158,11,0.22)] ring-1 ring-amber-400/30 dark:ring-amber-500/20"
@@ -357,6 +421,19 @@ export const Card = ({
                 )}
               </button>
 
+              <button
+                onClick={handleToggleSummary}
+                className={`p-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                  showSummary
+                    ? "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/80 ring-1 ring-emerald-500/50 shadow-2xs font-semibold"
+                    : "text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-stone-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30"
+                }`}
+                title={showSummary ? "Hide AI summary" : "✨ Summarize with AI"}
+                aria-label={showSummary ? "Hide AI summary" : "✨ Summarize with AI"}
+              >
+                <SparkleIcon size="sm" className={showSummary ? "text-emerald-600 dark:text-emerald-400 animate-pulse" : ""} />
+              </button>
+
               {!readonly && onEdit && (
                 <button
                   onClick={() => onEdit({ _id: id, title, link, note: noteText, type, tags, pinned: isPinned })}
@@ -440,6 +517,20 @@ export const Card = ({
               )}
             </button>
 
+            <button
+              onClick={handleToggleSummary}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                showSummary
+                  ? "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/80 ring-1 ring-emerald-500/50 shadow-2xs font-semibold"
+                  : "text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-stone-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30"
+              }`}
+              title={showSummary ? "Hide AI summary" : "✨ Summarize with AI"}
+              aria-label={showSummary ? "Hide AI summary" : "✨ Summarize with AI"}
+            >
+              <SparkleIcon size="sm" className={showSummary ? "text-emerald-600 dark:text-emerald-400 animate-pulse" : ""} />
+              <span className="hidden xl:inline text-xs font-semibold">Summarize</span>
+            </button>
+
             {!readonly && onEdit && (
               <button
                 onClick={() => onEdit({ _id: id, title, link, note: noteText, type, tags, pinned: isPinned })}
@@ -463,6 +554,104 @@ export const Card = ({
             )}
           </div>
         </div>
+
+        {/* AI Summary Drawer / Panel */}
+        {showSummary && (
+          <div className="mb-3.5 rounded-xl border border-emerald-500/30 dark:border-emerald-600/30 bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-white/90 dark:from-[#0d1c13] dark:via-[#112419] dark:to-[#0f1d14] overflow-hidden shadow-2xs animate-cmd-fade">
+            {/* Summary Drawer Header */}
+            <div className="flex items-center justify-between px-3.5 py-2 bg-emerald-500/10 dark:bg-emerald-900/30 border-b border-emerald-500/20 dark:border-emerald-800/40">
+              <div className="flex items-center gap-1.5">
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  <SparkleIcon size="sm" />
+                </span>
+                <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                  AI Summary
+                </span>
+                {(summaryModel || summaryProvider) && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 shadow-2xs">
+                    {summaryProvider ? `${summaryProvider} • ` : ""}{summaryModel || "AI"}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1">
+                {summary && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCopySummary}
+                      className="p-1 rounded-md text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                      title={summaryCopied ? "Copied!" : "Copy summary"}
+                    >
+                      {summaryCopied ? (
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">Copied!</span>
+                      ) : (
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); fetchSummary(); }}
+                      className="p-1 rounded-md text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                      title="Regenerate summary"
+                    >
+                      <svg className={`w-3.5 h-3.5 ${summaryLoading ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowSummary(false); }}
+                  className="p-1 rounded-md text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                  title="Close summary drawer"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Drawer Body */}
+            <div className="p-3.5 text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
+              {summaryLoading ? (
+                <div className="space-y-2 py-1">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold mb-2">
+                    <span className="animate-spin text-emerald-600 dark:text-emerald-400">
+                      <SparkleIcon size="sm" />
+                    </span>
+                    <span className="text-xs">Generating AI summary...</span>
+                  </div>
+                  <div className="h-2.5 bg-emerald-500/20 dark:bg-emerald-500/10 rounded w-5/6 animate-pulse" />
+                  <div className="h-2.5 bg-emerald-500/20 dark:bg-emerald-500/10 rounded w-full animate-pulse" />
+                  <div className="h-2.5 bg-emerald-500/20 dark:bg-emerald-500/10 rounded w-4/6 animate-pulse" />
+                </div>
+              ) : summaryError ? (
+                <div className="flex flex-col gap-2 py-1 text-rose-600 dark:text-rose-400">
+                  <span>{summaryError}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); fetchSummary(); }}
+                    className="self-start text-[11px] font-bold text-emerald-700 dark:text-emerald-400 underline cursor-pointer"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : summary ? (
+                <div className="prose prose-xs dark:prose-invert max-w-none">
+                  <RichMarkdown content={summary} />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {/* Content Body */}
         <div className="flex-1 overflow-visible pr-0 min-w-0">

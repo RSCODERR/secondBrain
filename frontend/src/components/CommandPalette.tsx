@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme, type ThemePreset } from "../context/ThemeContext";
+import { SparkleIcon } from "../icons/sparkleIcon";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface CommandPaletteProps {
   onShareBrain: () => void;
   onSetFilter: (filter: FilterType) => void;
   onSetSearch: (query: string) => void;
+  onOpenAI?: () => void;
 }
 
 // ─── Command Item Definition ──────────────────────────────────────────────────
@@ -143,6 +145,7 @@ export function CommandPalette({
   onShareBrain,
   onSetFilter,
   onSetSearch,
+  onOpenAI,
 }: CommandPaletteProps) {
   const { setThemePreset, themePreset, toggleTheme, resolvedTheme } = useTheme();
   const navigate = useNavigate();
@@ -204,6 +207,22 @@ export function CommandPalette({
 
     // 2. Quick actions (always shown, filtered by query)
     const actions: CommandItem[] = [
+      {
+        id: "ask-ai",
+        label: "Ask Second Brain AI",
+        description: "Search, synthesize, or question your saved memories",
+        icon: (
+          <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-emerald-500 bg-emerald-500/10">
+            <SparkleIcon size="sm" />
+          </span>
+        ),
+        kbd: ["J"],
+        accent: true,
+        action: () => {
+          if (onOpenAI) onOpenAI();
+          onClose();
+        },
+      },
       {
         id: "add-content",
         label: "Add Content",

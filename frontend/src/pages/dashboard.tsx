@@ -20,6 +20,8 @@ import { ThemeToggle } from "../components/ThemeToggle"
 import { useTheme } from "../context/ThemeContext"
 import { CommandPalette } from "../components/CommandPalette"
 import { getTagColorClass } from "../utils/tagColors"
+import { AIChatDrawer } from "../components/AIChatDrawer"
+import { AIFloatingButton } from "../components/AIFloatingButton"
 
 function DashBoard() {
   const { logout } = useAuth()
@@ -33,13 +35,17 @@ function DashBoard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [editContent, setEditContent] = useState<ContentItem | null>(null)
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
 
-  // Global Cmd+K / Ctrl+K shortcut
+  // Global Shortcuts: Cmd+K (Palette), Cmd+J (Ask Brain AI)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault()
         setCmdPaletteOpen((prev) => !prev)
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === "j" || e.key === "J")) {
+        e.preventDefault()
+        setAiDrawerOpen((prev) => !prev)
       }
     }
     window.addEventListener("keydown", handler)
@@ -148,6 +154,23 @@ function DashBoard() {
     }
   }
 
+  const handleSelectCardFromAI = (cardId: string) => {
+    setSearchQuery("")
+    setFilterType(null)
+    setShowOnlyPinned(false)
+    setSelectedTags([])
+    setTimeout(() => {
+      const el = document.getElementById(cardId)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+        el.classList.add("ring-4", "ring-emerald-500", "scale-[1.02]")
+        setTimeout(() => {
+          el.classList.remove("ring-4", "ring-emerald-500", "scale-[1.02]")
+        }, 3000)
+      }
+    }, 150)
+  }
+
   return (
     <div
       data-theme-preset={themePreset}
@@ -231,6 +254,13 @@ function DashBoard() {
           onShareBrain={() => setShareOpen(true)}
           onSetFilter={setFilterType}
           onSetSearch={setSearchQuery}
+          onOpenAI={() => setAiDrawerOpen(true)}
+        />
+
+        <AIChatDrawer
+          open={aiDrawerOpen}
+          onClose={() => setAiDrawerOpen(false)}
+          onSelectCard={handleSelectCardFromAI}
         />
 
         {/* Action Controls & Search Bar */}
@@ -492,6 +522,12 @@ function DashBoard() {
           )}
         </div>
       </div>
+
+      {/* Floating AI Assistant Trigger */}
+      <AIFloatingButton
+        onClick={() => setAiDrawerOpen((prev) => !prev)}
+        isOpen={aiDrawerOpen}
+      />
     </div>
   )
 }
