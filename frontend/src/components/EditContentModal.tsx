@@ -293,6 +293,12 @@ export function EditContentModal({
               onPendingChange={setPendingTag}
               suggestedTags={suggestedTags}
               placeholder="Add tags (e.g. work, design, reading)..."
+              contentContext={{
+                title,
+                type,
+                link,
+                note,
+              }}
             />
           </div>
 

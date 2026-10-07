@@ -277,6 +277,12 @@ export function CreateContentModal({
               onPendingChange={setPendingTag}
               suggestedTags={suggestedTags}
               placeholder="Add tags (e.g. work, design, reading)..."
+              contentContext={{
+                title: titleRef.current?.value || "",
+                type,
+                link: linkRef.current?.value || "",
+                note,
+              }}
             />
           </div>
 

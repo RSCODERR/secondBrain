@@ -26,6 +26,7 @@ interface CommandPaletteProps {
   onSetFilter: (filter: FilterType) => void;
   onSetSearch: (query: string) => void;
   onOpenAI?: () => void;
+  onSemanticSearch?: (query: string) => void;
 }
 
 // ─── Command Item Definition ──────────────────────────────────────────────────
@@ -146,6 +147,7 @@ export function CommandPalette({
   onSetFilter,
   onSetSearch,
   onOpenAI,
+  onSemanticSearch,
 }: CommandPaletteProps) {
   const { setThemePreset, themePreset, toggleTheme, resolvedTheme } = useTheme();
   const navigate = useNavigate();
@@ -203,6 +205,30 @@ export function CommandPalette({
           })),
         });
       }
+
+      result.push({
+        label: "AI Semantic Search",
+        items: [
+          {
+            id: "cmd-semantic-search",
+            label: `Search conceptually for "${query.trim()}"`,
+            description: "Find related ideas and memories using Second Brain AI",
+            icon: (
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
+                <SparkleIcon size="sm" />
+              </span>
+            ),
+            action: () => {
+              if (onSemanticSearch) {
+                onSemanticSearch(query.trim());
+              } else {
+                onSetSearch(query.trim());
+              }
+              onClose();
+            },
+          },
+        ],
+      });
     }
 
     // 2. Quick actions (always shown, filtered by query)

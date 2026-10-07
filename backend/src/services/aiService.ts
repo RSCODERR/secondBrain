@@ -434,3 +434,155 @@ SUMMARIZATION FORMAT GUIDELINES:
   };
 }
 
+/**
+ * Auto-suggest relevant tags for a card based on its content
+ */
+export async function suggestTags({
+  title = "",
+  type = "note",
+  link = "",
+  note = "",
+  existingTags = [],
+  knownUserTags = [],
+}: {
+  title?: string;
+  type?: string;
+  link?: string | null;
+  note?: string | null;
+  existingTags?: string[];
+  knownUserTags?: string[];
+}): Promise<{
+  tags: string[];
+  provider: string;
+  model: string;
+}> {
+  const existingList = existingTags.map((t) => t.toLowerCase().trim()).filter(Boolean);
+  const knownList = knownUserTags.map((t) => t.toLowerCase().trim()).filter(Boolean);
+
+  const systemPrompt = `You are an AI tag generator for a personal knowledge management system.
+Given the card details, suggest between 3 to 6 concise, highly relevant tags.
+
+RULES:
+1. Return ONLY lowercase single-word or hyphenated tags (e.g. "architecture", "clean-code", "typescript", "devops", "health").
+2. No "#" symbols.
+3. If any known user tags are relevant, prefer using them so the user's taxonomy stays unified.
+4. Avoid duplicate tags from existing tags list: ${JSON.stringify(existingList)}.
+5. Respond ONLY with a valid JSON array of strings, e.g. ["tag1", "tag2", "tag3"]. No markdown formatting, no explanations.`;
+
+  const userPrompt = `CARD DETAILS:
+Title: "${title}"
+Type: ${type}
+${link ? `URL: ${link}` : ""}
+${note ? `Note / Content: ${note.slice(0, 1000)}` : ""}
+${knownList.length > 0 ? `Known User Tags in Brain: ${knownList.slice(0, 30).join(", ")}` : ""}`;
+
+  const result = await executeAIFallback(systemPrompt, [], userPrompt);
+
+  let tags: string[] = [];
+  try {
+    const cleaned = result.reply.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed)) {
+      tags = parsed
+        .map((t) => String(t).toLowerCase().replace(/[^a-z0-9_-]/g, "").trim())
+        .filter((t) => t.length > 1 && !existingList.includes(t))
+        .slice(0, 6);
+    }
+  } catch (err) {
+    const matches = result.reply.match(/"([a-zA-Z0-9_-]+)"/g);
+    if (matches) {
+      tags = matches
+        .map((m) => m.replace(/"/g, "").toLowerCase().trim())
+        .filter((t) => t.length > 1 && !existingList.includes(t))
+        .slice(0, 6);
+    }
+  }
+
+  return {
+    tags,
+    provider: result.provider,
+    model: result.model,
+  };
+}
+
+export interface SemanticMatch {
+  id: string;
+  relevanceScore: number;
+  reason: string;
+}
+
+/**
+ * Perform conceptual / semantic search over user's memories
+ */
+export async function semanticSearch({
+  query,
+  contents = [],
+}: {
+  query: string;
+  contents: any[];
+}): Promise<{
+  matches: SemanticMatch[];
+  provider: string;
+  model: string;
+}> {
+  if (!contents || contents.length === 0) {
+    return { matches: [], provider: "None", model: "None" };
+  }
+
+  const cardList = contents.slice(0, 50).map((c, i) => {
+    const tagList = Array.isArray(c.tags)
+      ? c.tags.map((t: any) => (typeof t === "string" ? t : t?.title || "")).filter(Boolean).join(", ")
+      : "";
+    const snippet = c.note ? c.note.slice(0, 400) : c.link || "";
+    return `[Item ${i + 1}] ID: ${c._id}
+Title: "${c.title}"
+Type: ${c.type}
+Tags: ${tagList || "None"}
+Details: ${snippet}`;
+  }).join("\n---\n");
+
+  const systemPrompt = `You are a semantic search engine for a personal knowledge base.
+Your job is to identify all saved items that are conceptually, semantically, or thematically related to the user's search query, EVEN IF they do not contain the exact query words.
+
+Examples:
+- Query "clean architecture" matches items on "SOLID principles", "hexagonal architecture", "ports & adapters", "domain-driven design".
+- Query "fitness" matches items on "hypertrophy", "calisthenics", "meal prep", "bench press".
+- Query "financial independence" matches items on "index funds", "dividend investing", "FIRE", "savings rate".
+
+SAVED ITEMS:
+${cardList}
+
+Respond ONLY with valid JSON in this exact structure:
+{
+  "matches": [
+    {
+      "id": "exact_item_id_from_above",
+      "relevanceScore": 0.95,
+      "reason": "1 short sentence explaining the conceptual connection"
+    }
+  ]
+}
+Only include items with genuine relevance (score >= 0.5). If no items are conceptually related, return {"matches": []}.`;
+
+  const result = await executeAIFallback(systemPrompt, [], `User Search Query: "${query}"`);
+
+  let matches: SemanticMatch[] = [];
+  try {
+    const cleaned = result.reply.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (parsed && Array.isArray(parsed.matches)) {
+      matches = parsed.matches
+        .filter((m: any) => m && m.id && typeof m.relevanceScore === "number" && m.relevanceScore >= 0.5)
+        .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
+    }
+  } catch (err) {
+    console.warn("Failed to parse semantic search JSON:", err);
+  }
+
+  return {
+    matches,
+    provider: result.provider,
+    model: result.model,
+  };
+}
+

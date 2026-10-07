@@ -50,6 +50,7 @@ interface CardProps {
   }) => void
   onTogglePin?: (id: string) => void
   onTagClick?: (tag: string) => void
+  semanticReason?: string
 }
 
 const getYouTubeEmbedUrl = (url: string | null | undefined): string | null => {
@@ -192,7 +193,8 @@ export const Card = ({
   onDelete,
   onEdit,
   onTogglePin,
-  onTagClick
+  onTagClick,
+  semanticReason,
 }: CardProps) => {
   const [copied, setCopied] = useState(false)
   const [noteText, setNoteText] = useState(note || "")
@@ -554,6 +556,18 @@ export const Card = ({
             )}
           </div>
         </div>
+
+        {/* Semantic Search Match Reason */}
+        {semanticReason && (
+          <div className="mb-3 px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/60 border border-emerald-500/25 dark:border-emerald-800/50 flex items-start gap-1.5 text-xs text-emerald-900 dark:text-emerald-200 shadow-2xs animate-cmd-fade">
+            <span className="text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
+              <SparkleIcon size="sm" />
+            </span>
+            <span className="leading-snug">
+              <strong className="font-semibold text-emerald-800 dark:text-emerald-300">Concept Match:</strong> {semanticReason}
+            </span>
+          </div>
+        )}
 
         {/* AI Summary Drawer / Panel */}
         {showSummary && (

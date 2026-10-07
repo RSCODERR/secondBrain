@@ -17,7 +17,7 @@ import userMiddleware from "./middlewares/userMiddleware";
 import crypto from "crypto"; 
 import cors from "cors";
 import { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendBugReportEmail, sendContactEmail } from "./utils/mailer";
-import { askBrain, summarizeCard } from "./services/aiService";
+import { askBrain, summarizeCard, suggestTags, semanticSearch } from "./services/aiService";
 
 const app = express();
 
@@ -567,6 +567,56 @@ async function resolveTagIds(rawTags: any[]): Promise<mongoose.Types.ObjectId[]>
   return tagIds;
 }
 
+/**
+ * Automatically cleans up tags that have 0 references across all content documents in the database.
+ * If candidateTagIds is provided, only evaluates those specific tags.
+ * Otherwise, performs a global cleanup of all unreferenced tags in the database.
+ *
+ * Rules:
+ * - If usage count == 0: Tag is deleted from MongoDB Tag collection.
+ * - If usage count >= 1: Tag is kept in MongoDB Tag collection.
+ */
+export async function cleanupOrphanedTags(
+  candidateTagIds?: (mongoose.Types.ObjectId | string)[]
+): Promise<number> {
+  try {
+    if (candidateTagIds && candidateTagIds.length > 0) {
+      const validIds = candidateTagIds
+        .filter((id) => id && mongoose.Types.ObjectId.isValid(id.toString()))
+        .map((id) => new mongoose.Types.ObjectId(id.toString()));
+
+      if (validIds.length === 0) return 0;
+
+      // Find which candidate tags are still referenced by at least 1 content document
+      const stillUsedIds = await content.distinct("tags", { tags: { $in: validIds } });
+      const stillUsedSet = new Set(
+        stillUsedIds.filter(Boolean).map((id: any) => id.toString())
+      );
+
+      // Identify tags that now have 0 usages across the entire database
+      const toDelete = validIds.filter((id) => !stillUsedSet.has(id.toString()));
+
+      if (toDelete.length > 0) {
+        const result = await Tag.deleteMany({ _id: { $in: toDelete } });
+        console.log(`[Tag Cleanup] Removed ${result.deletedCount} unused tag(s) with 0 references.`);
+        return result.deletedCount || 0;
+      }
+      return 0;
+    }
+
+    // Global cleanup: delete all tags in the Tag collection not referenced by any content document
+    const activeTagIds = (await content.distinct("tags")).filter(Boolean);
+    const result = await Tag.deleteMany({ _id: { $nin: activeTagIds } });
+    if (result.deletedCount && result.deletedCount > 0) {
+      console.log(`[Tag Cleanup] Purged ${result.deletedCount} orphaned tag(s) from database.`);
+    }
+    return result.deletedCount || 0;
+  } catch (error) {
+    console.error("[Tag Cleanup] Error cleaning up orphaned tags:", error);
+    return 0;
+  }
+}
+
 app.post("/api/v1/content", userMiddleware, async (req, res) => {
   try {
     const { title, link, note, type, tags: rawTags, pinned } = req.body;
@@ -649,15 +699,27 @@ app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
         // @ts-ignore
         const userId = req.userId;
 
-        const deleted = await content.deleteOne({
+        const targetContent = await content.findOne({
           _id: contentId,
           userId
         });
 
-        if (deleted.deletedCount === 0) {
+        if (!targetContent) {
           return res.status(404).json({
             message: "content not found or not authorized"
           });
+        }
+
+        const removedTagIds = targetContent.tags || [];
+
+        await content.deleteOne({
+          _id: contentId,
+          userId
+        });
+
+        // If any tags on this deleted content have 0 remaining usages in the DB, delete them from Tag collection
+        if (removedTagIds.length > 0) {
+          await cleanupOrphanedTags(removedTagIds);
         }
 
         return res.json({
@@ -703,7 +765,12 @@ app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
             note: type === "note" ? note : null
         };
 
+        let previousTagIds: any[] = [];
         if (rawTags !== undefined) {
+            const existing = await content.findOne({ _id: contentId, userId }).select("tags");
+            if (existing && Array.isArray(existing.tags)) {
+                previousTagIds = existing.tags;
+            }
             updateData.tags = await resolveTagIds(rawTags);
         }
 
@@ -721,6 +788,19 @@ app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
             return res.status(404).json({
                 message: "content not found or not authorized"
             });
+        }
+
+        // If any tags were removed during edit, clean them up if they now have 0 usages
+        if (rawTags !== undefined && previousTagIds.length > 0) {
+            const currentTagIdStrings = (updated.tags || []).map((t: any) =>
+                (t._id || t).toString()
+            );
+            const removedTagIds = previousTagIds.filter(
+                (oldId: any) => !currentTagIdStrings.includes(oldId.toString())
+            );
+            if (removedTagIds.length > 0) {
+                await cleanupOrphanedTags(removedTagIds);
+            }
         }
 
         return res.json({
@@ -770,6 +850,9 @@ app.get("/api/v1/tags", userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
+
+        // Ensure database has no orphaned tags
+        await cleanupOrphanedTags();
 
         const userContents = await content.find({ userId }).select("tags");
         const tagIdCountMap = new Map<string, number>();
@@ -881,6 +964,97 @@ app.post("/api/v1/ai/summarize", async (req, res) => {
         console.error("AI Summarize Error:", error);
         return res.status(500).json({
             message: error?.message || "Failed to generate AI summary. Please try again."
+        });
+    }
+});
+
+app.post("/api/v1/ai/suggest-tags", async (req, res) => {
+    try {
+        const { title, type, link, note, existingTags } = req.body;
+
+        if (!title && !note && !link) {
+            return res.status(400).json({
+                message: "Please enter a title, note, or link before auto-suggesting tags."
+            });
+        }
+
+        // Fetch known tags across system to help keep user taxonomy aligned
+        let knownUserTags: string[] = [];
+        try {
+            const allTags = await Tag.find({}).limit(40).select("title");
+            knownUserTags = allTags.map((t: any) => t.title);
+        } catch {
+            // fallback
+        }
+
+        const result = await suggestTags({
+            title: title || "",
+            type: type || "note",
+            link: link || "",
+            note: note || "",
+            existingTags: Array.isArray(existingTags) ? existingTags : [],
+            knownUserTags
+        });
+
+        return res.json({
+            tags: result.tags,
+            provider: result.provider,
+            model: result.model
+        });
+
+    } catch (error: any) {
+        console.error("AI Suggest Tags Error:", error);
+        return res.status(500).json({
+            message: error?.message || "Failed to suggest tags. Please try again."
+        });
+    }
+});
+
+app.post("/api/v1/ai/semantic-search", async (req, res) => {
+    try {
+        const { query, contents: clientContents } = req.body;
+
+        if (!query || typeof query !== "string" || !query.trim()) {
+            return res.status(400).json({ message: "Search query is required." });
+        }
+
+        let searchPool = Array.isArray(clientContents) ? clientContents : [];
+
+        // If client did not provide contents array, attempt to query authenticated user's contents
+        if (searchPool.length === 0) {
+            let token = req.cookies?.token;
+            if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+                token = req.headers.authorization.substring(7);
+            }
+
+            if (token) {
+                try {
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+                    searchPool = await content.find({ userId: decoded.id })
+                        .populate("tags", "title")
+                        .sort({ pinned: -1, _id: -1 })
+                        .limit(60);
+                } catch {
+                    // token invalid
+                }
+            }
+        }
+
+        const result = await semanticSearch({
+            query: query.trim(),
+            contents: searchPool
+        });
+
+        return res.json({
+            matches: result.matches,
+            provider: result.provider,
+            model: result.model
+        });
+
+    } catch (error: any) {
+        console.error("AI Semantic Search Error:", error);
+        return res.status(500).json({
+            message: error?.message || "Failed to perform semantic search. Please try again."
         });
     }
 });
@@ -1057,6 +1231,9 @@ app.delete("/api/v1/user", userMiddleware, async (req, res) => {
         // Delete all content belonging to this user
         await content.deleteMany({ userId });
 
+        // Clean up any tags that now have 0 references across the database
+        await cleanupOrphanedTags();
+
         // Delete the user
         await User.deleteOne({ _id: userId });
 
@@ -1175,7 +1352,15 @@ app.post("/api/v1/contact", async (req, res) => {
     }
 });
 
-connectDB();
+connectDB().then(() => {
+    cleanupOrphanedTags().then((count) => {
+        if (count > 0) {
+            console.log(`[Startup] Cleaned up ${count} orphaned tag(s) from database.`);
+        }
+    }).catch((err) => {
+        console.error("[Startup] Initial tag cleanup error:", err);
+    });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

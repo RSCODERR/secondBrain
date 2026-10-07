@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import { BACKEND_URL } from "../config";
+import { SparkleIcon } from "../icons/sparkleIcon";
 import { getTagColorClass, normalizeTag } from "../utils/tagColors";
+
+export interface ContentContext {
+  title?: string;
+  type?: string;
+  link?: string;
+  note?: string;
+}
 
 interface TagInputProps {
   tags: string[];
@@ -8,6 +18,7 @@ interface TagInputProps {
   suggestedTags?: string[];
   placeholder?: string;
   maxTags?: number;
+  contentContext?: ContentContext;
 }
 
 export function TagInput({
@@ -17,10 +28,14 @@ export function TagInput({
   suggestedTags = [],
   placeholder = "Add tags (e.g. work, design, reading)...",
   maxTags = 10,
+  contentContext,
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +85,56 @@ export function TagInput({
 
   const removeTag = (indexToRemove: number) => {
     onChange(tags.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleAutoSuggest = async () => {
+    if (!contentContext?.title && !contentContext?.note && !contentContext?.link) {
+      setSuggestError("Type title, note, or link first");
+      setTimeout(() => setSuggestError(null), 3000);
+      return;
+    }
+
+    setIsSuggesting(true);
+    setSuggestError(null);
+    try {
+      const res = await axios.post(`${BACKEND_URL}/api/v1/ai/suggest-tags`, {
+        title: contentContext.title || "",
+        type: contentContext.type || "note",
+        link: contentContext.link || "",
+        note: contentContext.note || "",
+        existingTags: tags,
+      });
+
+      if (Array.isArray(res.data?.tags) && res.data.tags.length > 0) {
+        const newTags = res.data.tags.filter((t: string) => !tags.includes(normalizeTag(t)));
+        if (newTags.length > 0) {
+          setAiSuggestions(newTags);
+        } else {
+          setSuggestError("All suggested tags already added");
+          setTimeout(() => setSuggestError(null), 3000);
+        }
+      } else {
+        setSuggestError("No tags found for this content");
+        setTimeout(() => setSuggestError(null), 3000);
+      }
+    } catch (err: any) {
+      console.error("Auto suggest tags failed:", err);
+      setSuggestError(err?.response?.data?.message || "Failed to suggest tags");
+      setTimeout(() => setSuggestError(null), 3500);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+  const addAllAiSuggestions = () => {
+    let updated = [...tags];
+    for (const t of aiSuggestions) {
+      if (!updated.includes(t) && updated.length < maxTags) {
+        updated.push(t);
+      }
+    }
+    onChange(updated);
+    setAiSuggestions([]);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,14 +212,28 @@ export function TagInput({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      {/* Label and counter */}
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-semibold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
-          <span>Tags</span>
-          <span className="text-[11px] font-normal text-stone-400 dark:text-stone-500">
-            (optional — press Enter, Space, Comma, or click + Add)
-          </span>
-        </label>
+      {/* Label, AI Auto-suggest button, and counter */}
+      <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+            Tags
+          </label>
+          <button
+            type="button"
+            onClick={handleAutoSuggest}
+            disabled={isSuggesting}
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700/60 shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Auto-suggest relevant tags using AI"
+          >
+            <SparkleIcon size="sm" className={isSuggesting ? "animate-spin text-emerald-600" : "text-emerald-600 dark:text-emerald-400"} />
+            <span>{isSuggesting ? "Suggesting tags..." : "✨ Auto-suggest tags"}</span>
+          </button>
+          {suggestError && (
+            <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 animate-cmd-fade">
+              {suggestError}
+            </span>
+          )}
+        </div>
         <span className="text-[11px] text-stone-400 dark:text-stone-500">
           {tags.length}/{maxTags}
         </span>
@@ -250,6 +329,45 @@ export function TagInput({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* AI Suggested Tags Bar */}
+      {aiSuggestions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 p-2 mt-2 rounded-xl bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 dark:from-emerald-950/60 dark:via-teal-950/40 dark:to-emerald-950/60 border border-emerald-300/80 dark:border-emerald-800/60 shadow-2xs animate-cmd-fade">
+          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+            <SparkleIcon size="sm" className="text-emerald-600 dark:text-emerald-400" />
+            <span>AI Suggested:</span>
+          </span>
+          {aiSuggestions.map((st) => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => {
+                addTag(st);
+                setAiSuggestions((prev) => prev.filter((t) => t !== st));
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white dark:bg-[#142218] hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-2xs cursor-pointer hover:scale-105 active:scale-95 transition-all"
+            >
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">+</span>
+              <span>#{st}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={addAllAiSuggestions}
+            className="ml-auto text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white underline cursor-pointer px-1"
+          >
+            Add All (+{aiSuggestions.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setAiSuggestions([])}
+            className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer ml-1 text-xs"
+            title="Dismiss suggestions"
+          >
+            ✕
+          </button>
         </div>
       )}
 

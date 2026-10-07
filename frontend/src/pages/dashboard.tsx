@@ -22,6 +22,7 @@ import { CommandPalette } from "../components/CommandPalette"
 import { getTagColorClass } from "../utils/tagColors"
 import { AIChatDrawer } from "../components/AIChatDrawer"
 import { AIFloatingButton } from "../components/AIFloatingButton"
+import { SparkleIcon } from "../icons/sparkleIcon"
 
 function DashBoard() {
   const { logout } = useAuth()
@@ -33,6 +34,9 @@ function DashBoard() {
   const [showOnlyPinned, setShowOnlyPinned] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [isSemanticSearch, setIsSemanticSearch] = useState(false)
+  const [semanticLoading, setSemanticLoading] = useState(false)
+  const [semanticMatches, setSemanticMatches] = useState<{ id: string; relevanceScore: number; reason: string }[]>([])
   const [editContent, setEditContent] = useState<ContentItem | null>(null)
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
@@ -77,7 +81,63 @@ function DashBoard() {
     return contents.filter((c) => Boolean(c.pinned)).length
   }, [contents])
 
+  const handleRunSemanticSearch = async (overrideQuery?: string) => {
+    const q = (overrideQuery ?? searchQuery).trim()
+    if (!q) return
+
+    setIsSemanticSearch(true)
+    setSemanticLoading(true)
+    try {
+      const res = await axios.post(
+        `${BACKEND_URL}/api/v1/ai/semantic-search`,
+        {
+          query: q,
+          contents,
+        },
+        { withCredentials: true }
+      )
+
+      if (Array.isArray(res.data?.matches)) {
+        setSemanticMatches(res.data.matches)
+      } else {
+        setSemanticMatches([])
+      }
+    } catch (err) {
+      console.error("Semantic search failed:", err)
+      setSemanticMatches([])
+    } finally {
+      setSemanticLoading(false)
+    }
+  }
+
   const filteredContents = useMemo(() => {
+    // Conceptual Semantic Search mode active
+    if (isSemanticSearch && searchQuery.trim() && !semanticLoading) {
+      const matchMap = new Map<string, number>()
+      semanticMatches.forEach((m, idx) => {
+        matchMap.set(m.id, idx)
+      })
+
+      return contents
+        .filter((item) => {
+          const isMatched = matchMap.has(item._id)
+          const matchesType = !filterType || item.type === filterType
+          const matchesPinned = !showOnlyPinned || Boolean(item.pinned)
+          const itemTags = (item.tags || []).map((t: any) =>
+            (typeof t === "string" ? t : t.title || "").toLowerCase()
+          )
+          const matchesTags =
+            selectedTags.length === 0 ||
+            selectedTags.every((st) => itemTags.includes(st.toLowerCase()))
+          return isMatched && matchesType && matchesPinned && matchesTags
+        })
+        .sort((a, b) => {
+          const rankA = matchMap.get(a._id) ?? 999
+          const rankB = matchMap.get(b._id) ?? 999
+          return rankA - rankB
+        })
+    }
+
     return contents
       .filter((item) => {
         const matchesType = !filterType || item.type === filterType
@@ -107,7 +167,7 @@ function DashBoard() {
         if (!a.pinned && b.pinned) return 1
         return 0
       })
-  }, [contents, filterType, showOnlyPinned, selectedTags, searchQuery])
+  }, [contents, filterType, showOnlyPinned, selectedTags, searchQuery, isSemanticSearch, semanticMatches, semanticLoading])
 
   const handleTogglePin = async (contentId: string) => {
     try {
@@ -255,6 +315,10 @@ function DashBoard() {
           onSetFilter={setFilterType}
           onSetSearch={setSearchQuery}
           onOpenAI={() => setAiDrawerOpen(true)}
+          onSemanticSearch={(q) => {
+            setSearchQuery(q)
+            handleRunSemanticSearch(q)
+          }}
         />
 
         <AIChatDrawer
@@ -330,14 +394,29 @@ function DashBoard() {
             </div>
           </div>
 
-          {/* Row 2: Search bar with Cmd+K hint */}
-          <div className="relative w-full">
+          {/* Row 2: Search bar with Semantic Search button & Cmd+K hint */}
+          <div className="relative w-full flex items-center">
             <input
               type="text"
-              placeholder="Search notes, tags (#react), videos, tweets..."
+              placeholder={isSemanticSearch ? "Search conceptually with AI (e.g. clean architecture, productivity)..." : "Search notes, tags (#react), videos, tweets..."}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-28 py-2.5 text-sm bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2d4a31]/25 dark:focus:ring-emerald-500/20 focus:border-[#2d4a31] dark:focus:border-emerald-500 shadow-xs text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 transition-all"
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                if (isSemanticSearch) {
+                  setSemanticMatches([])
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  e.preventDefault()
+                  handleRunSemanticSearch()
+                }
+              }}
+              className={`w-full pl-9 pr-36 sm:pr-40 py-2.5 text-sm bg-white dark:bg-[#121c15] border rounded-xl focus:outline-none focus:ring-2 shadow-xs text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 transition-all ${
+                isSemanticSearch
+                  ? "border-emerald-500/80 dark:border-emerald-500/80 ring-2 ring-emerald-500/20"
+                  : "border-stone-200 dark:border-emerald-950/80 focus:ring-[#2d4a31]/25 dark:focus:ring-emerald-500/20 focus:border-[#2d4a31] dark:focus:border-emerald-500"
+              }`}
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -349,28 +428,98 @@ function DashBoard() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
-            {searchQuery ? (
+
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("")
+                    setSemanticMatches([])
+                  }}
+                  className="text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200 p-1 rounded-full hover:bg-stone-100 dark:hover:bg-[#1b2b20] cursor-pointer transition-colors"
+                  title="Clear search"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+
               <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200 p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-[#1b2b20] cursor-pointer transition-colors"
-                title="Clear search"
+                type="button"
+                onClick={() => {
+                  if (isSemanticSearch) {
+                    setIsSemanticSearch(false)
+                    setSemanticMatches([])
+                  } else if (searchQuery.trim()) {
+                    handleRunSemanticSearch()
+                  } else {
+                    setIsSemanticSearch(true)
+                  }
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none active:scale-95 ${
+                  isSemanticSearch
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                }`}
+                title={isSemanticSearch ? "Click to switch to keyword match" : "Search conceptually with AI"}
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <SparkleIcon size="sm" className={semanticLoading ? "animate-spin text-current" : isSemanticSearch ? "text-white" : "text-emerald-600 dark:text-emerald-400"} />
+                <span className="hidden sm:inline">{semanticLoading ? "Searching..." : isSemanticSearch ? "Semantic" : "✨ Semantic"}</span>
               </button>
-            ) : (
+
               <button
+                type="button"
                 onClick={() => setCmdPaletteOpen(true)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 cursor-pointer group"
+                className="hidden md:flex items-center gap-1 cursor-pointer group"
                 title="Open command palette (Ctrl+K)"
               >
-                <kbd className="hidden sm:flex items-center gap-0.5 text-[10px] font-medium text-stone-400 dark:text-stone-600 bg-stone-100 dark:bg-[#1b2b20] px-1.5 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40 group-hover:text-stone-600 dark:group-hover:text-stone-400 transition-colors">
+                <kbd className="flex items-center gap-0.5 text-[10px] font-medium text-stone-400 dark:text-stone-600 bg-stone-100 dark:bg-[#1b2b20] px-1.5 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40 group-hover:text-stone-600 dark:group-hover:text-stone-400 transition-colors">
                   <span className="text-[9px]">⌘</span>K
                 </kbd>
               </button>
-            )}
+            </div>
           </div>
+
+          {/* Semantic Search Active Banner */}
+          {isSemanticSearch && searchQuery.trim() && (
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent dark:from-emerald-950/60 dark:via-teal-950/30 dark:to-transparent border border-emerald-500/25 dark:border-emerald-800/50 shadow-2xs animate-cmd-fade flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  <SparkleIcon size="sm" className={semanticLoading ? "animate-spin" : ""} />
+                </span>
+                <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                  {semanticLoading
+                    ? `Searching conceptual memories for "${searchQuery}" with AI...`
+                    : `AI Semantic Search: Found ${semanticMatches.length} conceptual ${semanticMatches.length === 1 ? "memory" : "memories"} for "${searchQuery}"`}
+                </span>
+              </div>
+
+              {!semanticLoading && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleRunSemanticSearch()}
+                    className="text-xs text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white underline cursor-pointer font-medium"
+                  >
+                    Refresh
+                  </button>
+                  <span className="text-stone-300 dark:text-stone-700">|</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSemanticSearch(false)
+                      setSemanticMatches([])
+                    }}
+                    className="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-white cursor-pointer font-medium"
+                  >
+                    Switch to exact keywords
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Active Multi-Tag & State Filter Bar */}
           {(selectedTags.length > 0 || showOnlyPinned || filterType) && (
@@ -458,22 +607,26 @@ function DashBoard() {
 
           {!loading && !error && filteredContents.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6 w-full min-w-0">
-              {filteredContents.map(({ _id, type, link, title, note, tags, pinned }) => (
-                <Card
-                  key={_id}
-                  id={_id}
-                  type={type}
-                  link={link}
-                  note={note}
-                  title={title}
-                  tags={tags}
-                  pinned={pinned}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  onTogglePin={handleTogglePin}
-                  onTagClick={handleToggleTag}
-                />
-              ))}
+              {filteredContents.map(({ _id, type, link, title, note, tags, pinned }) => {
+                const semanticReason = semanticMatches.find((m) => m.id === _id)?.reason
+                return (
+                  <Card
+                    key={_id}
+                    id={_id}
+                    type={type}
+                    link={link}
+                    note={note}
+                    title={title}
+                    tags={tags}
+                    pinned={pinned}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    onTogglePin={handleTogglePin}
+                    onTagClick={handleToggleTag}
+                    semanticReason={semanticReason}
+                  />
+                )
+              })}
             </div>
           )}
 
@@ -503,12 +656,27 @@ function DashBoard() {
                     : "Collect YouTube videos, Twitter posts, web links, and notes all in one beautiful place."}
               </p>
               {searchQuery ? (
-                <Button
-                  varient="secondary"
-                  size="md"
-                  text="Clear Search"
-                  onClick={() => setSearchQuery("")}
-                />
+                <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                  <Button
+                    varient="secondary"
+                    size="md"
+                    text="Clear Search"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setSemanticMatches([])
+                    }}
+                  />
+                  {!isSemanticSearch && (
+                    <button
+                      type="button"
+                      onClick={() => handleRunSemanticSearch()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold shadow-xs cursor-pointer active:scale-95 transition-all"
+                    >
+                      <SparkleIcon size="sm" />
+                      <span>Try AI Semantic Search</span>
+                    </button>
+                  )}
+                </div>
               ) : (
                 <Button
                   varient="primary"
