@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BrainIcon } from "../icons/brainIcon";
+import { SparkleIcon } from "../icons/sparkleIcon";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { GitHubButton } from "../components/GitHubButton";
-import { useTheme } from "../context/ThemeContext";
 import "../App.css";
 
-// ─── Typewriter ────────────────────────────────────────────────────────────────
 const WORDS = ["YouTube videos.", "Twitter threads.", "web links.", "personal notes."];
 
 function TypewriterWord() {
@@ -38,225 +37,39 @@ function TypewriterWord() {
   );
 }
 
-// ─── Section Configuration ─────────────────────────────────────────────────────
-const SECTIONS = [
-  { id: "hero", label: "01 Hero" },
-  { id: "overview", label: "02 Overview" },
-  { id: "features", label: "03 Formats" },
-  { id: "workflow", label: "04 Workflow" },
-  { id: "cta", label: "05 Get Started" },
-];
-
 export default function LandingPage() {
-  const { setTheme } = useTheme();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [visited, setVisited] = useState<boolean[]>([true, false, false, false, false]);
-  const isScrollingRef = useRef(false);
-
-  // On mobile devices, ensure system default theme preference is active on the landing page
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 640) {
-      if (!localStorage.getItem("sb_theme_preset")) {
-        setTheme("system");
-      }
-    }
-  }, [setTheme]);
-
-  const lockScroll = useCallback(() => {
-    isScrollingRef.current = true;
-    setTimeout(() => {
-      isScrollingRef.current = false;
-    }, 1050); // Matches the 1000ms transition duration
-  }, []);
-
-  // Safe navigation to a specific slide
-  const goToSlide = useCallback((index: number) => {
-    if (index === activeIndex || isScrollingRef.current) return;
-    const clamped = Math.max(0, Math.min(SECTIONS.length - 1, index));
-    lockScroll();
-    setActiveIndex(clamped);
-    setVisited((prev) => {
-      if (prev[clamped]) return prev;
-      const next = [...prev];
-      next[clamped] = true;
-      return next;
-    });
-  }, [activeIndex, lockScroll]);
-
-  // Wheel handling with smooth lock
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (isScrollingRef.current) return;
-
-      if (Math.abs(e.deltaY) > 20) {
-        if (e.deltaY > 0) {
-          // Scroll down
-          setActiveIndex((cur) => {
-            if (cur < SECTIONS.length - 1) {
-              const next = cur + 1;
-              lockScroll();
-              setVisited((v) => {
-                if (v[next]) return v;
-                const updated = [...v];
-                updated[next] = true;
-                return updated;
-              });
-              return next;
-            }
-            return cur;
-          });
-        } else {
-          // Scroll up
-          setActiveIndex((cur) => {
-            if (cur > 0) {
-              const prev = cur - 1;
-              lockScroll();
-              setVisited((v) => {
-                if (v[prev]) return v;
-                const updated = [...v];
-                updated[prev] = true;
-                return updated;
-              });
-              return prev;
-            }
-            return cur;
-          });
-        }
-      }
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-    };
-  }, [lockScroll]);
-
-  // Touch handling for mobile swipe
-  useEffect(() => {
-    let touchStartY = 0;
-    let touchStartX = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isScrollingRef.current) return;
-      const diffY = touchStartY - e.touches[0].clientY;
-      const diffX = touchStartX - e.touches[0].clientX;
-
-      // Ensure vertical swipe is predominant
-      if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 40) {
-        if (diffY > 0) {
-          // Swipe up -> scroll down
-          if (activeIndex < SECTIONS.length - 1) {
-            goToSlide(activeIndex + 1);
-          }
-        } else {
-          // Swipe down -> scroll up
-          if (activeIndex > 0) {
-            goToSlide(activeIndex - 1);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-    };
-  }, [activeIndex, goToSlide]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isScrollingRef.current) return;
-      if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
-        e.preventDefault();
-        setActiveIndex((cur) => {
-          if (cur < SECTIONS.length - 1) {
-            const next = cur + 1;
-            lockScroll();
-            setVisited((v) => {
-              if (v[next]) return v;
-              const updated = [...v];
-              updated[next] = true;
-              return updated;
-            });
-            return next;
-          }
-          return cur;
-        });
-      } else if (e.key === "ArrowUp" || e.key === "PageUp") {
-        e.preventDefault();
-        setActiveIndex((cur) => {
-          if (cur > 0) {
-            const prev = cur - 1;
-            lockScroll();
-            setVisited((v) => {
-              if (v[prev]) return v;
-              const updated = [...v];
-              updated[prev] = true;
-              return updated;
-            });
-            return prev;
-          }
-          return cur;
-        });
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lockScroll]);
-
-  const progressPercent = (activeIndex / (SECTIONS.length - 1)) * 100;
-
   return (
-    <div className="fullpage-wrapper bg-[#1c2b1e] dark:bg-[#070b08] text-stone-100 select-none transition-colors duration-300">
-      
-      {/* ── TOP PROGRESS BAR ── */}
-      <div className="fixed top-0 inset-x-0 h-1 z-50 bg-black/30 pointer-events-none">
-        <div
-          className="h-full bg-[#5c9964] dark:bg-emerald-500 transition-all duration-1000 ease-[cubic-bezier(0.65,0,0.35,1)] shadow-[0_0_10px_rgba(92,153,100,0.8)]"
-          style={{ width: `${Math.max(6, progressPercent)}%` }}
-        />
-      </div>
+    <div className="min-h-screen bg-[#1a2a1c] dark:bg-[#070b08] text-stone-100 transition-colors duration-300">
 
-      {/* ── FIXED TOP NAVIGATION ── */}
-      <nav className="fixed top-0 inset-x-0 z-40 bg-[#1c2b1e]/85 dark:bg-[#070b08]/90 backdrop-blur-md border-b border-white/10 dark:border-emerald-950/70 transition-colors duration-300">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-8 py-3 md:py-3.5">
-          <Link to="/" className="inline-flex items-center gap-2 md:gap-2.5 group">
-            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-[#2d4a31] dark:bg-emerald-700/80 flex items-center justify-center text-white group-hover:bg-[#3a5e40] dark:group-hover:bg-emerald-600 transition-colors shadow-sm">
+      {/* TOP NAVIGATION */}
+      <nav className="sticky top-0 z-40 bg-[#1a2a1c]/90 dark:bg-[#070b08]/95 backdrop-blur-md border-b border-white/10 dark:border-white/5 transition-colors duration-300">
+        <div className="max-w-5xl mx-auto flex items-center justify-between px-5 sm:px-8 py-3.5">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#2d4a31] dark:bg-emerald-700/80 flex items-center justify-center text-white shadow-sm">
               <BrainIcon />
             </div>
-            <span className="text-sm md:text-base font-bold tracking-tight text-white">Second Brain</span>
+            <span className="text-sm font-bold tracking-tight text-white">Second Brain</span>
           </Link>
-          <div className="flex items-center gap-2 md:gap-2.5">
+          <div className="flex items-center gap-2">
             <GitHubButton />
-
             <div className="hidden sm:inline-flex items-center">
               <ThemeToggle />
             </div>
             <Link
               to="/contact"
-              className="hidden sm:inline-block px-2.5 py-1 md:px-3 md:py-1.5 text-xs sm:text-sm font-semibold text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+              className="hidden sm:inline-block px-2.5 py-1.5 text-xs sm:text-sm font-medium text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
             >
               Contact
             </Link>
             <Link
               to="/signin"
-              className="px-3 py-1 md:px-3.5 md:py-1.5 text-xs sm:text-sm font-semibold text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-stone-300 hover:text-white transition-colors rounded-lg hover:bg-white/10"
             >
               Sign in
             </Link>
             <Link
               to="/signup"
-              className="px-3 py-1 md:px-4 md:py-1.5 text-xs sm:text-sm font-semibold text-white bg-[#2d4a31] dark:bg-emerald-600 hover:bg-[#3a5e40] dark:hover:bg-emerald-500 rounded-lg transition-all shadow-sm border border-[#4a7a50]/40 dark:border-emerald-500/40 hover:border-[#4a7a50]"
+              className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-white bg-[#2d4a31] dark:bg-emerald-600 hover:bg-[#3a5e40] dark:hover:bg-emerald-500 rounded-lg transition-colors border border-[#4a7a50]/30 dark:border-emerald-500/30"
             >
               Get started
             </Link>
@@ -264,462 +77,380 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── RIGHT VERTICAL PAGINATION DOTS (Tablets & PC) ── */}
-      <div className="fixed right-5 sm:right-8 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-3.5">
-        {SECTIONS.map((sec, idx) => {
-          const isActive = activeIndex === idx;
-          return (
-            <button
-              key={sec.id}
-              onClick={() => goToSlide(idx)}
-              aria-label={`Jump to ${sec.label}`}
-              className="group relative flex items-center justify-center p-1 focus:outline-none cursor-pointer"
-            >
-              {/* Tooltip */}
-              <span className="absolute right-full mr-3 px-2.5 py-1 rounded-md text-xs font-semibold tracking-wide bg-stone-900/90 text-stone-200 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md">
-                {sec.label}
+      {/* HERO */}
+      <section className="relative max-w-5xl mx-auto px-5 sm:px-8 pt-20 pb-24 sm:pt-28 sm:pb-32 text-center overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[#2d4a31]/25 dark:bg-emerald-950/25 rounded-full blur-[120px] pointer-events-none" />
+
+        <h1 className="relative text-4xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-[1.05] text-white">
+          One place to save<br />
+          <TypewriterWord />
+        </h1>
+
+        <p className="relative mt-5 sm:mt-6 text-sm sm:text-lg text-[#8aab8d] dark:text-stone-300 max-w-xl mx-auto leading-relaxed">
+          Second Brain is a personal knowledge vault for YouTube videos, tweets, web links, and notes. Save once, summarize with AI, search semantically, and share when ready.
+        </p>
+
+        <div className="relative mt-8 flex flex-row items-center justify-center gap-3">
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-7 sm:py-3 rounded-xl bg-white dark:bg-emerald-500 text-[#1a2a1c] dark:text-[#060a07] text-sm font-bold hover:bg-stone-100 dark:hover:bg-emerald-400 transition-all shadow-lg shadow-black/25"
+          >
+            Start for free
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </Link>
+          <Link
+            to="/signin"
+            className="inline-flex items-center px-5 py-2.5 sm:px-7 sm:py-3 rounded-xl border border-white/20 dark:border-white/10 text-stone-200 text-sm font-semibold hover:bg-white/10 hover:text-white transition-all"
+          >
+            Sign in
+          </Link>
+        </div>
+
+        {/* Sample content preview cards */}
+        <div className="relative mt-14 grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
+          <div className="bg-white/5 dark:bg-[#111c14]/80 border border-white/10 dark:border-emerald-900/40 rounded-xl p-3.5 hover:border-[#5c9964]/40 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-5 h-5 rounded bg-red-500/20 text-red-400 flex items-center justify-center">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               </span>
-              {/* Indicator Pip */}
-              <span
-                className={`rounded-full transition-all duration-300 ${
-                  isActive
-                    ? "w-2.5 h-6 bg-[#5c9964] dark:bg-emerald-500 shadow-[0_0_8px_rgba(92,153,100,0.8)]"
-                    : "w-2 h-2 bg-stone-500/40 hover:bg-stone-300 hover:scale-125"
-                }`}
-              />
-            </button>
-          );
-        })}
-      </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-red-300">YouTube</span>
+            </div>
+            <p className="text-xs font-medium text-stone-200">System Design Masterclass</p>
+            <p className="text-[11px] text-stone-400 mt-0.5">Embedded player</p>
+          </div>
 
-      {/* ── BOTTOM LEFT PROGRESS COUNTER (Mobile & Desktop) ── */}
-      <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-8 z-40 flex items-center gap-2 pointer-events-none">
-        <span className="text-xs font-mono font-bold tracking-widest text-stone-400 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/5">
-          <strong className="text-[#5c9964] dark:text-emerald-400">0{activeIndex + 1}</strong> / 0{SECTIONS.length}
-        </span>
-      </div>
+          <div className="bg-white/5 dark:bg-[#111c14]/80 border border-white/10 dark:border-emerald-900/40 rounded-xl p-3.5 hover:border-[#5c9964]/40 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-5 h-5 rounded bg-sky-500/20 text-sky-400 flex items-center justify-center text-[10px] font-bold">X</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-sky-300">Twitter</span>
+            </div>
+            <p className="text-xs font-medium text-stone-200">&ldquo;Write code for the reader&rdquo;</p>
+            <p className="text-[11px] text-stone-400 mt-0.5">Thread bookmark</p>
+          </div>
 
-      {/* ── VERTICAL SLIDER CONTAINER ── */}
-      <div
-        className="fullpage-track"
-        style={{ transform: `translate3d(0, -${activeIndex * 100}%, 0)` }}
-      >
-
-        {/* ════════════════════════════════════════════════════════════════════════
-            SLIDE 0: HERO
-        ════════════════════════════════════════════════════════════════════════ */}
-        <section className="fullpage-slide bg-[#1c2b1e] dark:bg-[#070b08] text-white transition-colors duration-300">
-          <div className="absolute top-10 left-10 w-[350px] md:w-[550px] h-[350px] md:h-[550px] bg-[#2d4a31]/50 dark:bg-emerald-950/40 rounded-full blur-[100px] md:blur-[130px] pointer-events-none" />
-          <div className="absolute bottom-10 right-10 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#1a3d1e]/70 dark:bg-emerald-900/25 rounded-full blur-[90px] md:blur-[110px] pointer-events-none" />
-
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-8 pt-16 pb-4 md:py-20 flex flex-col justify-center items-center text-center">
-            {/* Pill */}
-            <div className={`slide-elem ${visited[0] ? "slide-visible" : "slide-hidden"}`}>
-              <span className="inline-flex items-center gap-1.5 md:gap-2 text-[10px] sm:text-xs font-semibold tracking-widest uppercase text-[#8aab8d] dark:text-emerald-300 border border-[#4a7a50]/40 dark:border-emerald-800/40 px-3 py-1 md:px-3.5 md:py-1.5 rounded-full bg-[#2d4a31]/40 dark:bg-emerald-950/60 mb-3 md:mb-6 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#5c9964] dark:bg-emerald-400 animate-ping" />
-                Personal Knowledge Base
+          <div className="hidden sm:block bg-white/5 dark:bg-[#111c14]/80 border border-white/10 dark:border-emerald-900/40 rounded-xl p-3.5 hover:border-[#5c9964]/40 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-5 h-5 rounded bg-[#4a7a50]/30 text-[#8aab8d] dark:text-emerald-300 flex items-center justify-center">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8aab8d] dark:text-emerald-300">Note</span>
             </div>
+            <p className="text-xs font-medium text-stone-200">Database indexing cheat sheet</p>
+            <p className="text-[11px] text-stone-400 mt-0.5">Personal note</p>
+          </div>
+        </div>
+      </section>
 
-            {/* Headline */}
-            <h1 className={`text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[1.08] md:leading-[1.05] slide-elem delay-150 ${visited[0] ? "slide-visible" : "slide-hidden"}`}>
-              One place for
-            </h1>
-            <div className={`text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[1.08] md:leading-[1.05] mt-0.5 md:mt-1 slide-elem delay-300 ${visited[0] ? "slide-visible" : "slide-hidden"}`}>
-              <TypewriterWord />
-            </div>
-
-            {/* Subtitle */}
-            <p className={`mt-2.5 md:mt-5 text-xs sm:text-base md:text-lg text-[#8aab8d] dark:text-stone-300 max-w-sm md:max-w-xl leading-relaxed slide-elem delay-400 ${visited[0] ? "slide-visible" : "slide-hidden"}`}>
-              Stop scattering bookmarks across browser tabs and apps. Second Brain is a single, searchable vault for everything you discover.
+      {/* WHY SECOND BRAIN */}
+      <section className="bg-[#f5f3ef] dark:bg-[#0c120e] text-[#1c2b1e] dark:text-stone-100 transition-colors duration-300">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
+          <div className="text-center max-w-2xl mx-auto">
+            <p className="text-xs font-bold tracking-widest uppercase text-[#4a7a50] dark:text-emerald-400">What it does</p>
+            <h2 className="mt-2 text-3xl sm:text-5xl font-black tracking-tight text-[#1c2b1e] dark:text-white">
+              Stop scattering links across 6 different apps.
+            </h2>
+            <p className="mt-4 text-stone-600 dark:text-stone-400 text-sm sm:text-base leading-relaxed">
+              Most people save content to browser bookmarks, screenshots, notes apps, and DMs. None of it is searchable or organized. Second Brain puts it all in one place with tags, instant search, and intelligent retrieval.
             </p>
-
-            {/* CTAs */}
-            <div className={`mt-4 md:mt-8 flex flex-row items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto slide-elem delay-500 ${visited[0] ? "slide-visible" : "slide-hidden"}`}>
-              <Link
-                to="/signup"
-                className="inline-flex items-center justify-center gap-1.5 md:gap-2 px-4 py-2.5 md:px-6 md:py-3 rounded-xl bg-white dark:bg-emerald-500 text-[#1c2b1e] dark:text-[#060a07] text-xs md:text-sm font-bold hover:bg-stone-100 dark:hover:bg-emerald-400 transition-all shadow-lg shadow-black/30 active:scale-[0.98]"
-              >
-                Start for free
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </Link>
-              <Link
-                to="/signin"
-                className="inline-flex items-center justify-center gap-1.5 md:gap-2 px-4 py-2.5 md:px-6 md:py-3 rounded-xl border border-white/20 dark:border-emerald-900/60 text-stone-200 text-xs md:text-sm font-semibold hover:bg-white/10 hover:text-white transition-all active:scale-[0.98]"
-              >
-                Sign in
-              </Link>
-            </div>
-
-            {/* Sample Mini Preview Cards */}
-            <div className={`mt-5 md:mt-10 grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 w-full max-w-2xl text-left slide-elem delay-600 ${visited[0] ? "slide-visible" : "slide-hidden"}`}>
-              <div className="bg-white/5 dark:bg-[#111c14]/80 border border-white/10 dark:border-emerald-900/40 backdrop-blur-sm rounded-xl p-2.5 md:p-3.5 hover:border-[#5c9964]/50 dark:hover:border-emerald-500/50 transition-colors">
-                <div className="flex items-center gap-1.5 md:gap-2 mb-1">
-                  <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-red-500/20 text-red-400 flex items-center justify-center text-[9px] md:text-[10px] font-bold">Y</div>
-                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-red-300">YouTube</span>
-                </div>
-                <p className="text-[11px] md:text-xs font-medium text-stone-200 truncate">System Design Masterclass</p>
-                <p className="text-[10px] md:text-[11px] text-stone-400">Embedded preview</p>
-              </div>
-
-              <div className="bg-white/5 dark:bg-[#111c14]/80 border border-white/10 dark:border-emerald-900/40 backdrop-blur-sm rounded-xl p-2.5 md:p-3.5 hover:border-[#5c9964]/50 dark:hover:border-emerald-500/50 transition-colors">
-                <div className="flex items-center gap-1.5 md:gap-2 mb-1">
-                  <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-sky-500/20 text-sky-400 flex items-center justify-center text-[9px] md:text-[10px] font-bold">T</div>
-                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-sky-300">Twitter</span>
-                </div>
-                <p className="text-[11px] md:text-xs font-medium text-stone-200 truncate">"Write code for reader"</p>
-                <p className="text-[10px] md:text-[11px] text-stone-400">Thread bookmark</p>
-              </div>
-
-              <div className="hidden md:block bg-white/5 dark:bg-[#111c14]/80 border border-white/10 dark:border-emerald-900/40 backdrop-blur-sm rounded-xl p-3.5 hover:border-[#5c9964]/50 dark:hover:border-emerald-500/50 transition-colors">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-5 h-5 rounded bg-[#4a7a50]/30 dark:bg-emerald-950/60 text-[#8aab8d] dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold">N</div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8aab8d] dark:text-emerald-300">Note</span>
-                </div>
-                <p className="text-xs font-medium text-stone-200 truncate">Database indexing cheat sheet</p>
-                <p className="text-[11px] text-stone-400">Quick personal note</p>
-              </div>
-            </div>
-
-            {/* Scroll Down Prompt Button */}
-            <button
-              onClick={() => goToSlide(1)}
-              className="mt-4 md:mt-8 inline-flex flex-col items-center gap-1 text-[10px] md:text-xs text-[#8aab8d] dark:text-emerald-400 hover:text-white transition-colors cursor-pointer focus:outline-none"
-            >
-              <span className="tracking-wider uppercase text-[10px] md:text-[11px] font-medium">Scroll to explore</span>
-              <svg className="w-3.5 h-3.5 md:w-4 md:h-4 animate-bounce-down" viewBox="0 0 16 16" fill="none">
-                <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
           </div>
-        </section>
 
-        {/* ════════════════════════════════════════════════════════════════════════
-            SLIDE 1: OVERVIEW & STATS
-        ════════════════════════════════════════════════════════════════════════ */}
-        <section className="fullpage-slide bg-[#f5f3ef] dark:bg-[#0c120e] text-[#1c2b1e] dark:text-stone-100 transition-colors duration-300">
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-8 pt-14 pb-4 md:py-16 flex flex-col justify-center items-center text-center">
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/80 shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-xs font-black mb-3">01</div>
+              <h3 className="text-sm font-bold text-[#1c2b1e] dark:text-stone-100">One unified library</h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Videos, tweets, links, and notes all in one searchable place. No more jumping between tabs.</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/80 shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-xs font-black mb-3">02</div>
+              <h3 className="text-sm font-bold text-[#1c2b1e] dark:text-stone-100">Search and tags</h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Tag anything when you save it. Search by keyword or filter by tag to find what you need without scrolling.</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#121c15] border border-stone-200 dark:border-emerald-950/80 shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-xs font-black mb-3">03</div>
+              <h3 className="text-sm font-bold text-[#1c2b1e] dark:text-stone-100">Share a public link</h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Generate a read-only link to your vault and share your curated collection with anyone.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* BUILT-IN AI FEATURES */}
+      <section className="bg-[#142316] dark:bg-[#080d09] text-white transition-colors duration-300 border-t border-b border-white/5">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
+          <div className="text-center max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#5c9964] dark:text-emerald-400 text-xs font-semibold mb-3">
+              <SparkleIcon size="sm" />
+              <span>Built-in Intelligence</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              An AI that actually knows what you saved.
+            </h2>
+            <p className="mt-4 text-stone-300 dark:text-stone-400 text-sm sm:text-base leading-relaxed">
+              Standard chatbots know the internet, but they do not know your personal notes. Second Brain connects an AI directly to your vault for citations, summaries, and semantic retrieval.
+            </p>
+          </div>
+
+          {/* AI Feature Grid & Preview */}
+          <div className="mt-14 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            <div className={`slide-elem ${visited[1] ? "slide-visible" : "slide-hidden"}`}>
-              <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase text-[#4a7a50] dark:text-emerald-400">
-                Why Second Brain
-              </span>
-              <h2 className="mt-1 md:mt-2 text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#1c2b1e] dark:text-white">
-                Turn web chaos into personal clarity.
-              </h2>
-              <p className="mt-1.5 md:mt-3 text-stone-600 dark:text-stone-400 max-w-xl mx-auto text-xs sm:text-base leading-relaxed line-clamp-2 md:line-clamp-none">
-                Designed for builders, thinkers, and lifelong learners who consume high-value content every day and need instant recall.
-              </p>
+            {/* Left 4 Feature Cards */}
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-2xl p-5 hover:border-[#5c9964]/40 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <h3 className="text-sm font-bold text-stone-100">Ask Your Brain</h3>
+                <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">
+                  Chat with an assistant grounded in your library. It answers questions and provides direct citations linking to your saved notes.
+                </p>
+              </div>
+
+              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-2xl p-5 hover:border-[#5c9964]/40 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mb-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </div>
+                <h3 className="text-sm font-bold text-stone-100">1-Click Summaries</h3>
+                <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">
+                  Generate high-density TL;DR summaries and core takeaways for articles, videos, or lengthy notes without reading through everything again.
+                </p>
+              </div>
+
+              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-2xl p-5 hover:border-[#5c9964]/40 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center mb-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <h3 className="text-sm font-bold text-stone-100">Semantic Search</h3>
+                <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">
+                  Find content by conceptual meaning. Searching for &ldquo;latency&rdquo; surfaces your notes on database indexing and Redis caching.
+                </p>
+              </div>
+
+              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-2xl p-5 hover:border-[#5c9964]/40 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </div>
+                <h3 className="text-sm font-bold text-stone-100">Smart Tagging</h3>
+                <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">
+                  Second Brain evaluates incoming content and automatically suggests taxonomy tags so your library stays organized effortlessly.
+                </p>
+              </div>
+
             </div>
 
-            {/* Stats Grid */}
-            <div className={`mt-4 md:mt-10 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6 w-full max-w-3xl slide-elem delay-200 ${visited[1] ? "slide-visible" : "slide-hidden"}`}>
-              <div className="bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 md:p-5 shadow-sm">
-                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2d4a31] dark:text-emerald-400 tracking-tight">4+</p>
-                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5 md:mt-1">Core formats</p>
+            {/* Right Interactive Mockup Showcase */}
+            <div className="lg:col-span-5 bg-[#0e1710] dark:bg-[#0c130d] border border-emerald-900/50 rounded-2xl p-5 shadow-2xl flex flex-col justify-between">
+              
+              <div>
+                <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded bg-emerald-600/30 text-emerald-400 flex items-center justify-center">
+                      <SparkleIcon size="sm" />
+                    </div>
+                    <span className="text-xs font-bold text-stone-200">Ask Your Brain</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded">
+                    Active Context: 48 items
+                  </span>
+                </div>
+
+                {/* Simulated Conversation */}
+                <div className="mt-4 space-y-3.5">
+                  
+                  {/* User query */}
+                  <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-left">
+                    <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">You asked</p>
+                    <p className="text-xs text-stone-200 mt-1 font-medium">
+                      What are my saved notes on database indexing strategies?
+                    </p>
+                  </div>
+
+                  {/* AI Response with realistic citation */}
+                  <div className="bg-[#152317] border border-emerald-900/60 rounded-xl p-3.5 text-left">
+                    <div className="flex items-center gap-1.5 mb-1.5 text-emerald-400 text-[11px] font-bold">
+                      <SparkleIcon size="sm" />
+                      <span>Second Brain AI</span>
+                    </div>
+                    <p className="text-xs text-stone-300 leading-relaxed">
+                      Based on your notes, here are the key strategies:
+                    </p>
+                    <ul className="text-xs text-stone-300 mt-2 space-y-1.5 list-disc list-inside">
+                      <li>Use composite indexes following the leftmost prefix rule for compound filters.</li>
+                      <li>B-tree indexes optimize range scans; hash indexes serve exact key lookups.</li>
+                    </ul>
+
+                    {/* Cited sources */}
+                    <div className="mt-3 pt-2.5 border-t border-emerald-900/40">
+                      <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">Referenced from your vault</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 px-2 py-0.5 rounded-md font-mono">
+                          Database indexing cheat sheet
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 px-2 py-0.5 rounded-md font-mono">
+                          System Design Masterclass
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
-              <div className="bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 md:p-5 shadow-sm">
-                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2d4a31] dark:text-emerald-400 tracking-tight">100%</p>
-                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5 md:mt-1">Private & yours</p>
+
+              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-stone-400">
+                <span>Direct keyboard shortcut</span>
+                <kbd className="font-mono bg-white/10 text-stone-200 px-2 py-0.5 rounded text-[10px]">Cmd + J</kbd>
               </div>
-              <div className="bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 md:p-5 shadow-sm">
-                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2d4a31] dark:text-emerald-400 tracking-tight">1-Click</p>
-                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5 md:mt-1">Public sharing</p>
-              </div>
-              <div className="bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 md:p-5 shadow-sm">
-                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2d4a31] dark:text-emerald-400 tracking-tight">&lt;10ms</p>
-                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5 md:mt-1">Instant search</p>
-              </div>
+
             </div>
 
-            {/* 3 Core Highlight Pillars */}
-            <div className={`mt-3 md:mt-8 grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 w-full max-w-4xl text-left slide-elem delay-400 ${visited[1] ? "slide-visible" : "slide-hidden"}`}>
-              <div className="flex md:block items-center gap-2.5 md:gap-0 p-2.5 sm:p-3 md:p-4 rounded-xl bg-stone-100/80 dark:bg-[#152219] border border-stone-200 dark:border-emerald-950/70">
-                <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-[10px] md:text-xs font-bold mb-0 md:mb-2 shrink-0">01</div>
-                <div>
-                  <h3 className="text-xs md:text-sm font-bold text-[#1c2b1e] dark:text-stone-100">Unified Stream</h3>
-                  <p className="text-[10px] md:text-xs text-stone-500 dark:text-stone-400 mt-0.5 md:mt-1 leading-snug line-clamp-1 md:line-clamp-none">No more juggling 5 different bookmark folders. One library.</p>
-                </div>
-              </div>
-              <div className="flex md:block items-center gap-2.5 md:gap-0 p-2.5 sm:p-3 md:p-4 rounded-xl bg-stone-100/80 dark:bg-[#152219] border border-stone-200 dark:border-emerald-950/70">
-                <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-[10px] md:text-xs font-bold mb-0 md:mb-2 shrink-0">02</div>
-                <div>
-                  <h3 className="text-xs md:text-sm font-bold text-[#1c2b1e] dark:text-stone-100">Pure Focus</h3>
-                  <p className="text-[10px] md:text-xs text-stone-500 dark:text-stone-400 mt-0.5 md:mt-1 leading-snug line-clamp-1 md:line-clamp-none">Editorial design and zero clutter. Just clean text and notes.</p>
-                </div>
-              </div>
-              <div className="flex md:block items-center gap-2.5 md:gap-0 p-2.5 sm:p-3 md:p-4 rounded-xl bg-stone-100/80 dark:bg-[#152219] border border-stone-200 dark:border-emerald-950/70">
-                <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-[10px] md:text-xs font-bold mb-0 md:mb-2 shrink-0">03</div>
-                <div>
-                  <h3 className="text-xs md:text-sm font-bold text-[#1c2b1e] dark:text-stone-100">Instant Recall</h3>
-                  <p className="text-[10px] md:text-xs text-stone-500 dark:text-stone-400 mt-0.5 md:mt-1 leading-snug line-clamp-1 md:line-clamp-none">Filter by tag or search keyword to retrieve anything fast.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Section Button */}
-            <button
-              onClick={() => goToSlide(2)}
-              className="mt-3.5 md:mt-8 inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 hover:text-[#1c2b1e] dark:hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none"
-            >
-              <span>See supported formats</span>
-              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-                <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ════════════════════════════════════════════════════════════════════════
-            SLIDE 2: CONTENT TYPES & FORMATS
-        ════════════════════════════════════════════════════════════════════════ */}
-        <section className="fullpage-slide bg-[#142316] dark:bg-[#080d09] text-white transition-colors duration-300">
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-8 pt-14 pb-4 md:py-16 flex flex-col justify-center items-center text-center">
-            
-            <div className={`slide-elem ${visited[2] ? "slide-visible" : "slide-hidden"}`}>
-              <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase text-[#5c9964] dark:text-emerald-400">
-                What You Can Save
-              </span>
-              <h2 className="mt-1 md:mt-2 text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white">
-                Every format, neatly organized.
-              </h2>
-              <p className="mt-1.5 md:mt-3 text-stone-300 dark:text-stone-400 max-w-lg mx-auto text-xs sm:text-base leading-relaxed line-clamp-2 md:line-clamp-none">
-                Add content from anywhere on the web. Second Brain automatically formats and structures your saves.
-              </p>
-            </div>
-
-            {/* 4 Cards Grid - 2x2 on both mobile & desktop for balanced fit */}
-            <div className={`mt-4 md:mt-10 grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 w-full max-w-3xl text-left slide-elem delay-200 ${visited[2] ? "slide-visible" : "slide-hidden"}`}>
-              {/* YouTube Card */}
-              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-xl md:rounded-2xl p-3 md:p-5 hover:border-[#5c9964]/60 dark:hover:border-emerald-500/50 transition-all shadow-md">
-                <div className="flex items-center justify-between mb-1.5 md:mb-3">
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <span className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-red-500/20 text-red-400 flex items-center justify-center text-[10px] md:text-xs font-bold">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    </span>
-                    <span className="text-[10px] md:text-xs font-bold text-red-300 uppercase tracking-wider">YouTube</span>
-                  </div>
-                  <span className="hidden sm:inline-block text-[10px] text-stone-400 bg-white/5 px-2 py-0.5 rounded">Player</span>
-                </div>
-                <h4 className="text-xs sm:text-sm md:text-base font-bold text-stone-100 truncate md:whitespace-normal">Live Video Previews</h4>
-                <p className="text-[10px] md:text-xs text-stone-400 mt-0.5 md:mt-1 leading-tight md:leading-relaxed line-clamp-2 md:line-clamp-none">Paste video URLs to watch directly in your dashboard.</p>
-                <div className="mt-1.5 md:mt-3 flex gap-1 md:gap-1.5">
-                  <span className="text-[9px] md:text-[10px] bg-[#2d4a31] dark:bg-emerald-950 text-[#8aab8d] dark:text-emerald-300 px-1.5 py-0.5 rounded border dark:border-emerald-900/40">#engineering</span>
-                </div>
-              </div>
-
-              {/* Twitter Card */}
-              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-xl md:rounded-2xl p-3 md:p-5 hover:border-[#5c9964]/60 dark:hover:border-emerald-500/50 transition-all shadow-md">
-                <div className="flex items-center justify-between mb-1.5 md:mb-3">
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <span className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-sky-500/20 text-sky-400 flex items-center justify-center text-[10px] md:text-xs font-bold">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
-                    </span>
-                    <span className="text-[10px] md:text-xs font-bold text-sky-300 uppercase tracking-wider">Twitter</span>
-                  </div>
-                  <span className="hidden sm:inline-block text-[10px] text-stone-400 bg-white/5 px-2 py-0.5 rounded">Threads</span>
-                </div>
-                <h4 className="text-xs sm:text-sm md:text-base font-bold text-stone-100 truncate md:whitespace-normal">Threads in Context</h4>
-                <p className="text-[10px] md:text-xs text-stone-400 mt-0.5 md:mt-1 leading-tight md:leading-relaxed line-clamp-2 md:line-clamp-none">Save tweets and insightful threads with full author info.</p>
-                <div className="mt-1.5 md:mt-3 flex gap-1 md:gap-1.5">
-                  <span className="text-[9px] md:text-[10px] bg-[#2d4a31] dark:bg-emerald-950 text-[#8aab8d] dark:text-emerald-300 px-1.5 py-0.5 rounded border dark:border-emerald-900/40">#threads</span>
-                </div>
-              </div>
-
-              {/* Web Link Card */}
-              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-xl md:rounded-2xl p-3 md:p-5 hover:border-[#5c9964]/60 dark:hover:border-emerald-500/50 transition-all shadow-md">
-                <div className="flex items-center justify-between mb-1.5 md:mb-3">
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <span className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] md:text-xs font-bold">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    </span>
-                    <span className="text-[10px] md:text-xs font-bold text-amber-300 uppercase tracking-wider">Links</span>
-                  </div>
-                  <span className="hidden sm:inline-block text-[10px] text-stone-400 bg-white/5 px-2 py-0.5 rounded">URLs</span>
-                </div>
-                <h4 className="text-xs sm:text-sm md:text-base font-bold text-stone-100 truncate md:whitespace-normal">Rich Bookmarks</h4>
-                <p className="text-[10px] md:text-xs text-stone-400 mt-0.5 md:mt-1 leading-tight md:leading-relaxed line-clamp-2 md:line-clamp-none">Clean preview cards with domain tags for fast scanning.</p>
-                <div className="mt-1.5 md:mt-3 flex gap-1 md:gap-1.5">
-                  <span className="text-[9px] md:text-[10px] bg-[#2d4a31] dark:bg-emerald-950 text-[#8aab8d] dark:text-emerald-300 px-1.5 py-0.5 rounded border dark:border-emerald-900/40">#reading</span>
-                </div>
-              </div>
-
-              {/* Note Card */}
-              <div className="bg-[#1c2b1e] dark:bg-[#101912] border border-white/10 dark:border-emerald-950/70 rounded-xl md:rounded-2xl p-3 md:p-5 hover:border-[#5c9964]/60 dark:hover:border-emerald-500/50 transition-all shadow-md">
-                <div className="flex items-center justify-between mb-1.5 md:mb-3">
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <span className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-[#5c9964]/30 dark:bg-emerald-950/70 text-[#8aab8d] dark:text-emerald-300 flex items-center justify-center text-[10px] md:text-xs font-bold">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </span>
-                    <span className="text-[10px] md:text-xs font-bold text-[#8aab8d] dark:text-emerald-300 uppercase tracking-wider">Notes</span>
-                  </div>
-                  <span className="hidden sm:inline-block text-[10px] text-stone-400 bg-white/5 px-2 py-0.5 rounded">Personal</span>
-                </div>
-                <h4 className="text-xs sm:text-sm md:text-base font-bold text-stone-100 truncate md:whitespace-normal">Quick Notes</h4>
-                <p className="text-[10px] md:text-xs text-stone-400 mt-0.5 md:mt-1 leading-tight md:leading-relaxed line-clamp-2 md:line-clamp-none">Jot down thoughts and code snippets in seconds.</p>
-                <div className="mt-1.5 md:mt-3 flex gap-1 md:gap-1.5">
-                  <span className="text-[9px] md:text-[10px] bg-[#2d4a31] dark:bg-emerald-950 text-[#8aab8d] dark:text-emerald-300 px-1.5 py-0.5 rounded border dark:border-emerald-900/40">#thoughts</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Section Button */}
-            <button
-              onClick={() => goToSlide(3)}
-              className="mt-3.5 md:mt-8 inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-white transition-colors cursor-pointer focus:outline-none"
-            >
-              <span>How it works</span>
-              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-                <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════════════
-            SLIDE 3: HOW IT WORKS
-        ════════════════════════════════════════════════════════════════════════ */}
-        <section className="fullpage-slide bg-[#f5f3ef] dark:bg-[#0c120e] text-[#1c2b1e] dark:text-stone-100 transition-colors duration-300">
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-8 pt-14 pb-4 md:py-16 flex flex-col justify-center items-center text-center">
-            
-            <div className={`slide-elem ${visited[3] ? "slide-visible" : "slide-hidden"}`}>
-              <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase text-[#4a7a50] dark:text-emerald-400">
-                Simple Workflow
-              </span>
-              <h2 className="mt-1 md:mt-2 text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#1c2b1e] dark:text-white">
-                Three steps, zero friction.
-              </h2>
-              <p className="mt-1.5 md:mt-3 text-stone-600 dark:text-stone-400 max-w-md mx-auto text-xs sm:text-base leading-relaxed line-clamp-2 md:line-clamp-none">
-                Everything is engineered to get out of your way and let you collect what matters.
-              </p>
-            </div>
-
-            {/* Steps Row - compact horizontal rows on mobile, 3 vertical cards on desktop */}
-            <div className={`mt-4 md:mt-12 grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-8 w-full max-w-4xl text-left slide-elem delay-200 ${visited[3] ? "slide-visible" : "slide-hidden"}`}>
-              <div className="flex md:block items-center md:items-start gap-3 md:gap-0 bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 sm:p-4 md:p-6 shadow-sm">
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-xs md:text-sm font-black mb-0 md:mb-4 shrink-0 shadow-sm">
-                  01
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm md:text-lg font-bold text-[#1c2b1e] dark:text-stone-100 mb-0.5 md:mb-1.5">Sign up in 30 seconds</h3>
-                  <p className="text-[11px] md:text-sm text-stone-500 dark:text-stone-400 leading-snug md:leading-relaxed line-clamp-2 md:line-clamp-none">
-                    Create your private brain with username and password. No credit card required.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex md:block items-center md:items-start gap-3 md:gap-0 bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 sm:p-4 md:p-6 shadow-sm">
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-xs md:text-sm font-black mb-0 md:mb-4 shrink-0 shadow-sm">
-                  02
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm md:text-lg font-bold text-[#1c2b1e] dark:text-stone-100 mb-0.5 md:mb-1.5">Paste links or notes</h3>
-                  <p className="text-[11px] md:text-sm text-stone-500 dark:text-stone-400 leading-snug md:leading-relaxed line-clamp-2 md:line-clamp-none">
-                    Drop a YouTube video, tweet, web page, or personal thought from any device.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex md:block items-center md:items-start gap-3 md:gap-0 bg-white dark:bg-[#121c15] rounded-xl md:rounded-2xl border border-stone-200 dark:border-emerald-950/80 p-3 sm:p-4 md:p-6 shadow-sm">
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-xs md:text-sm font-black mb-0 md:mb-4 shrink-0 shadow-sm">
-                  03
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm md:text-lg font-bold text-[#1c2b1e] dark:text-stone-100 mb-0.5 md:mb-1.5">Search & share anytime</h3>
-                  <p className="text-[11px] md:text-sm text-stone-500 dark:text-stone-400 leading-snug md:leading-relaxed line-clamp-2 md:line-clamp-none">
-                    Filter by tags, search instantly, or share your knowledge vault with a public link.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Section Button */}
-            <button
-              onClick={() => goToSlide(4)}
-              className="mt-4 md:mt-10 inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 hover:text-[#1c2b1e] dark:hover:text-emerald-300 transition-colors cursor-pointer focus:outline-none"
-            >
-              <span>Ready to start?</span>
-              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-                <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════════════
-            SLIDE 4: TESTIMONIAL, FINAL CTA & FOOTER
-        ════════════════════════════════════════════════════════════════════════ */}
-        <section className="fullpage-slide bg-[#111e13] dark:bg-[#050806] text-white flex flex-col justify-between transition-colors duration-300">
-          <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-8 pt-14 pb-4 md:py-12 text-center max-w-4xl mx-auto">
-            
-            {/* Testimonial Quote */}
-            <div className={`border-l-2 border-[#5c9964] dark:border-emerald-500 pl-3.5 md:pl-6 text-left max-w-xl mx-auto mb-4 md:mb-10 slide-elem ${visited[4] ? "slide-visible" : "slide-hidden"}`}>
-              <blockquote className="text-xs sm:text-base md:text-xl font-medium text-stone-200 italic leading-snug">
-                "I used to screenshot everything and lose it forever in my gallery. Now I paste it into Second Brain, and it's actually searchable when I need it."
-              </blockquote>
-              <p className="mt-1 md:mt-2 text-[10px] md:text-xs font-semibold text-[#8aab8d] dark:text-emerald-400">
-                — Reader & developer with 60+ organized saves
-              </p>
-            </div>
-
-            {/* Big CTA */}
-            <div className={`slide-elem delay-200 ${visited[4] ? "slide-visible" : "slide-hidden"}`}>
-              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white leading-tight">
-                Stop losing good stuff to the void.
-              </h2>
-              <p className="mt-1.5 md:mt-3 text-stone-300 dark:text-stone-400 text-xs sm:text-base max-w-md mx-auto leading-relaxed">
-                Build your curated vault of ideas today. Free, fast, and organized forever.
-              </p>
-
-              <div className="mt-4 md:mt-8 flex flex-row items-center justify-center gap-2.5 sm:gap-3">
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center justify-center gap-1.5 md:gap-2 px-5 py-2.5 md:px-8 md:py-3.5 rounded-xl bg-white dark:bg-emerald-500 text-[#1c2b1e] dark:text-[#060a07] text-xs md:text-sm font-bold hover:bg-stone-100 dark:hover:bg-emerald-400 transition-all shadow-xl shadow-black/40 active:scale-[0.98]"
-                >
-                  Build your brain
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </Link>
-                <Link
-                  to="/signin"
-                  className="inline-flex items-center justify-center gap-1.5 md:gap-2 px-5 py-2.5 md:px-8 md:py-3.5 rounded-xl border border-white/20 dark:border-emerald-900/60 text-stone-200 text-xs md:text-sm font-semibold hover:bg-white/10 hover:text-white transition-all active:scale-[0.98]"
-                >
-                  Sign in
-                </Link>
-              </div>
-            </div>
-
-            {/* Back to top button */}
-            <button
-              onClick={() => goToSlide(0)}
-              className="mt-4 md:mt-8 inline-flex items-center gap-1.5 text-xs text-[#8aab8d] dark:text-emerald-400 hover:text-white transition-colors cursor-pointer focus:outline-none"
-            >
-              <svg className="w-3.5 h-3.5 rotate-180" viewBox="0 0 16 16" fill="none">
-                <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>Back to top</span>
-            </button>
+      {/* CONTENT FORMATS */}
+      <section className="bg-[#f5f3ef] dark:bg-[#0c120e] text-[#1c2b1e] dark:text-stone-100 transition-colors duration-300">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
+          <div className="text-center max-w-2xl mx-auto">
+            <p className="text-xs font-bold tracking-widest uppercase text-[#4a7a50] dark:text-emerald-400">Supported formats</p>
+            <h2 className="mt-2 text-3xl sm:text-5xl font-black tracking-tight text-[#1c2b1e] dark:text-white">
+              Four types of content, neatly organized.
+            </h2>
+            <p className="mt-4 text-stone-600 dark:text-stone-400 text-sm sm:text-base leading-relaxed">
+              Paste a link or type a note. Second Brain handles the formatting and keeps it structured.
+            </p>
           </div>
 
-          {/* Minimal Footer */}
-          <footer className="w-full border-t border-white/10 dark:border-emerald-950/60 py-3 md:py-4 px-4 sm:px-8 bg-black/30 dark:bg-black/50 backdrop-blur-sm">
-            <div className="max-w-6xl mx-auto flex flex-row items-center justify-between gap-2 text-[11px] md:text-xs text-stone-400">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-[#2d4a31] dark:bg-emerald-700 flex items-center justify-center text-white">
-                  <BrainIcon />
-                </div>
-                <span className="font-semibold text-stone-300">Second Brain</span>
+          <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto">
+            <div className="bg-white dark:bg-[#101912] border border-stone-200 dark:border-emerald-950/70 rounded-2xl p-4 sm:p-6 hover:border-[#5c9964]/40 transition-colors shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-md bg-red-500/20 text-red-500 dark:text-red-400 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                </span>
+                <span className="text-xs font-bold text-red-600 dark:text-red-300 uppercase tracking-wider">YouTube</span>
               </div>
-              <div className="flex items-center gap-3 md:gap-4">
-                <Link to="/signin" className="hover:text-stone-200 transition-colors">Sign in</Link>
-                <Link to="/signup" className="hover:text-stone-200 transition-colors">Register</Link>
-                <Link to="/contact" className="hover:text-stone-200 transition-colors">Contact</Link>
-              </div>
+              <h4 className="text-sm sm:text-base font-bold text-[#1c2b1e] dark:text-stone-100">Video Previews</h4>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Paste a YouTube URL and watch it directly in your dashboard without switching tabs.</p>
+              <div className="mt-3"><span className="text-[10px] bg-stone-100 dark:bg-emerald-950 text-[#4a7a50] dark:text-emerald-300 px-2 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40">#engineering</span></div>
             </div>
-          </footer>
-        </section>
 
+            <div className="bg-white dark:bg-[#101912] border border-stone-200 dark:border-emerald-950/70 rounded-2xl p-4 sm:p-6 hover:border-[#5c9964]/40 transition-colors shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-md bg-sky-500/20 text-sky-500 dark:text-sky-400 flex items-center justify-center text-xs font-bold">X</span>
+                <span className="text-xs font-bold text-sky-600 dark:text-sky-300 uppercase tracking-wider">Twitter</span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-[#1c2b1e] dark:text-stone-100">Thread Bookmarks</h4>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Save tweets and threads with author info preserved. Read them later in a clean format.</p>
+              <div className="mt-3"><span className="text-[10px] bg-stone-100 dark:bg-emerald-950 text-[#4a7a50] dark:text-emerald-300 px-2 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40">#threads</span></div>
+            </div>
 
-      </div>
+            <div className="bg-white dark:bg-[#101912] border border-stone-200 dark:border-emerald-950/70 rounded-2xl p-4 sm:p-6 hover:border-[#5c9964]/40 transition-colors shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </span>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-300 uppercase tracking-wider">Links</span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-[#1c2b1e] dark:text-stone-100">Rich Bookmarks</h4>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Save any web page as a bookmark card. Preview the title and domain at a glance.</p>
+              <div className="mt-3"><span className="text-[10px] bg-stone-100 dark:bg-emerald-950 text-[#4a7a50] dark:text-emerald-300 px-2 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40">#reading</span></div>
+            </div>
+
+            <div className="bg-white dark:bg-[#101912] border border-stone-200 dark:border-emerald-950/70 rounded-2xl p-4 sm:p-6 hover:border-[#5c9964]/40 transition-colors shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-md bg-[#5c9964]/30 text-[#4a7a50] dark:text-emerald-300 flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </span>
+                <span className="text-xs font-bold text-[#4a7a50] dark:text-emerald-300 uppercase tracking-wider">Notes</span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-[#1c2b1e] dark:text-stone-100">Personal Notes</h4>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">Write quick thoughts, code snippets, or ideas. Stored and searchable like everything else.</p>
+              <div className="mt-3"><span className="text-[10px] bg-stone-100 dark:bg-emerald-950 text-[#4a7a50] dark:text-emerald-300 px-2 py-0.5 rounded border border-stone-200 dark:border-emerald-900/40">#thoughts</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="bg-[#142316] dark:bg-[#080d09] text-white transition-colors duration-300 border-t border-white/5">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
+          <div className="text-center max-w-2xl mx-auto">
+            <p className="text-xs font-bold tracking-widest uppercase text-[#5c9964] dark:text-emerald-400">How it works</p>
+            <h2 className="mt-2 text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Three simple steps.
+            </h2>
+            <p className="mt-4 text-stone-300 dark:text-stone-400 text-sm sm:text-base leading-relaxed">
+              No complicated configuration. No external plugins required.
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-[#1c2b1e] dark:bg-[#121c15] rounded-2xl border border-white/10 dark:border-emerald-950/80 p-6 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-sm font-black mb-4">01</div>
+              <h3 className="text-sm sm:text-base font-bold text-white mb-2">Create an account</h3>
+              <p className="text-xs sm:text-sm text-stone-400 leading-relaxed">Sign up with a username and password. No credit card required. Your vault is private by default.</p>
+            </div>
+
+            <div className="bg-[#1c2b1e] dark:bg-[#121c15] rounded-2xl border border-white/10 dark:border-emerald-950/80 p-6 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-sm font-black mb-4">02</div>
+              <h3 className="text-sm sm:text-base font-bold text-white mb-2">Save what you find</h3>
+              <p className="text-xs sm:text-sm text-stone-400 leading-relaxed">Paste a YouTube URL, tweet, web page, or write a note. Let the AI suggest relevant tags.</p>
+            </div>
+
+            <div className="bg-[#1c2b1e] dark:bg-[#121c15] rounded-2xl border border-white/10 dark:border-emerald-950/80 p-6 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-[#2d4a31] dark:bg-emerald-600 text-white flex items-center justify-center text-sm font-black mb-4">03</div>
+              <h3 className="text-sm sm:text-base font-bold text-white mb-2">Search, summarize, and ask</h3>
+              <p className="text-xs sm:text-sm text-stone-400 leading-relaxed">Search by keyword or meaning. Generate 1-click summaries or chat with your vault to recall anything.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="bg-[#111e13] dark:bg-[#050806] text-white transition-colors duration-300">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+            Start building your knowledge vault.
+          </h2>
+          <p className="mt-4 text-stone-300 dark:text-stone-400 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+            Free to use. No credit card. Your data stays private until you choose to share it.
+          </p>
+          <div className="mt-8 flex flex-row items-center justify-center gap-3">
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl bg-white dark:bg-emerald-500 text-[#1c2b1e] dark:text-[#060a07] text-sm font-bold hover:bg-stone-100 dark:hover:bg-emerald-400 transition-all shadow-xl shadow-black/30"
+            >
+              Create your account
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </Link>
+            <Link
+              to="/signin"
+              className="inline-flex items-center px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl border border-white/20 dark:border-white/10 text-stone-200 text-sm font-semibold hover:bg-white/10 hover:text-white transition-all"
+            >
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-black/40 dark:bg-black/60 border-t border-white/10 dark:border-white/5">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-400">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-[#2d4a31] dark:bg-emerald-700 flex items-center justify-center text-white">
+              <BrainIcon />
+            </div>
+            <span className="font-semibold text-stone-300">Second Brain</span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-5">
+            <Link to="/signin" className="hover:text-stone-200 transition-colors">Sign in</Link>
+            <Link to="/signup" className="hover:text-stone-200 transition-colors">Register</Link>
+            <Link to="/contact" className="hover:text-stone-200 transition-colors">Contact</Link>
+            <Link to="/privacy-policy" className="hover:text-stone-200 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-stone-200 transition-colors">Terms of Service</Link>
+          </div>
+          <p className="text-stone-500">&copy; {new Date().getFullYear()} Second Brain</p>
+        </div>
+      </footer>
     </div>
   );
 }

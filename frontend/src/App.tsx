@@ -10,6 +10,8 @@ import ShareView from "./pages/shareview"
 import ShareCardView from "./pages/shareCardView"
 import Settings from "./pages/settings"
 import ContactPage from "./pages/contact"
+import PrivacyPolicy from "./pages/privacyPolicy"
+import TermsOfService from "./pages/termsOfService"
 import { AuthProvider } from "./context/AuthContext"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ProtectedRoute, PublicOnlyRoute } from "./components/RouteGuards"
@@ -73,6 +75,8 @@ function App() {
         <Route path="/share/card/:id" element={<ShareCardView />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/contact-us" element={<ContactPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
       </Routes>
       </AuthProvider>
     </ThemeProvider>
