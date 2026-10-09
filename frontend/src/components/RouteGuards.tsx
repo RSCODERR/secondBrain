@@ -1,18 +1,13 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LoaderIcon } from "../icons/loaderIcon";
+import { DashboardSkeleton } from "./skeletons";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-purple-600 gap-3">
-        <LoaderIcon />
-        <span className="text-sm font-medium text-gray-500">Checking session...</span>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!isAuthenticated) {
@@ -27,9 +22,8 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-purple-600 gap-3">
-        <LoaderIcon />
-        <span className="text-sm font-medium text-gray-500">Loading...</span>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0b110d] transition-colors">
+        <div className="w-8 h-8 rounded-full border-2 border-[#2d4a31] dark:border-emerald-400 border-t-transparent animate-spin" />
       </div>
     );
   }

@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
 import { Card } from "../components/Card"
-import { LoaderIcon } from "../icons/loaderIcon"
 import { BrainIcon } from "../icons/brainIcon"
 import { Button } from "../components/button"
 import { TwitterIcon } from "../icons/twitterIcon"
@@ -11,6 +10,7 @@ import { YoutubeIcon } from "../icons/youTubeIcon"
 import { LinkIcon } from "../icons/linkIcon"
 import { NoteIcon } from "../icons/noteIcon"
 import { ThemeToggle } from "../components/ThemeToggle"
+import { ShareViewSkeleton } from "../components/skeletons"
 
 type FilterType = "all" | "youtube" | "twitter" | "link" | "note"
 
@@ -75,12 +75,7 @@ export default function ShareView() {
   }, [contents, filter, searchQuery])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-50 dark:bg-[#0b110d] transition-colors">
-        <LoaderIcon />
-        <p className="mt-4 text-sm text-gray-500 dark:text-zinc-400 animate-pulse">Loading shared brain...</p>
-      </div>
-    )
+    return <ShareViewSkeleton />
   }
 
   if (error) {

@@ -32,6 +32,7 @@ interface SideBarProps {
   selectedTags?: string[];
   onToggleTag?: (tag: string) => void;
   onClearTags?: () => void;
+  loading?: boolean;
 }
 
 export function SideBar(props: SideBarProps) {
@@ -171,7 +172,25 @@ export function SideBar(props: SideBarProps) {
             </div>
 
             {/* Tags List */}
-            {props.availableTags && props.availableTags.length > 0 ? (
+            {props.loading ? (
+              <div className="flex flex-col gap-1 max-h-52 overflow-y-auto pr-1 animate-pulse" aria-hidden="true">
+                {[60, 75, 50, 65].map((wPercent, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between w-full py-1.5 px-3 rounded-xl border border-transparent"
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="w-2 h-2 rounded-full bg-stone-300 dark:bg-emerald-900/60 shrink-0" />
+                      <div
+                        className="h-3 rounded bg-stone-200/80 dark:bg-emerald-950/60"
+                        style={{ width: `${wPercent}%` }}
+                      />
+                    </div>
+                    <span className="w-4 h-3 rounded-full bg-stone-200/60 dark:bg-emerald-950/40" />
+                  </div>
+                ))}
+              </div>
+            ) : props.availableTags && props.availableTags.length > 0 ? (
               <div className="flex flex-col gap-1 max-h-52 overflow-y-auto pr-1">
                 {props.availableTags.map((t) => {
                   const isSelected = props.selectedTags?.includes(t.title);

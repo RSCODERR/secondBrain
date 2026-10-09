@@ -3,10 +3,10 @@ import { useParams, Link } from "react-router-dom"
 import axios from "axios"
 import { BACKEND_URL } from "../config"
 import { Card } from "../components/Card"
-import { LoaderIcon } from "../icons/loaderIcon"
 import { BrainIcon } from "../icons/brainIcon"
 import { Button } from "../components/button"
 import { ThemeToggle } from "../components/ThemeToggle"
+import { ShareCardViewSkeleton } from "../components/skeletons"
 
 interface SharedCardData {
   _id: string
@@ -44,11 +44,7 @@ export default function ShareCardView() {
   }, [id])
 
   if (loading) {
-    return (
-      <div className="h-screen flex justify-center items-center bg-zinc-100 dark:bg-[#0b110d] transition-colors">
-        <LoaderIcon />
-      </div>
-    )
+    return <ShareCardViewSkeleton />
   }
 
   if (error || !content) {

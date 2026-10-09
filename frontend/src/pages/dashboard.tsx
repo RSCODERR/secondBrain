@@ -8,11 +8,11 @@ import { CreateContentModal } from "../components/CreateContentModal"
 import { SideBar, type FilterType } from "../components/SideBar"
 import { PlusIcon } from "../icons/PlusIcons"
 import { ShareIcon } from "../icons/shareicon"
-import { LoaderIcon } from "../icons/loaderIcon"
 import { MenuIcon } from "../icons/menuIcon"
 import { BrainIcon } from "../icons/brainIcon"
 import { useContent } from "../hooks/useContent"
 import { ShareBrainModal } from "../components/ShareBrainModel"
+import { CardSkeletonGrid } from "../components/skeletons"
 import { EditContentModal, type ContentItem } from "../components/EditContentModal"
 import { LogoutIcon } from "../icons/logoutIcon"
 import { useAuth } from "../context/AuthContext"
@@ -255,6 +255,7 @@ function DashBoard() {
         selectedTags={selectedTags}
         onToggleTag={handleToggleTag}
         onClearTags={() => setSelectedTags([])}
+        loading={loading}
       />
 
       <div className="ml-0 lg:ml-72 min-h-screen p-4 md:p-6 lg:p-8 transition-all duration-300 min-w-0 max-w-full overflow-x-hidden">
@@ -364,7 +365,11 @@ function DashBoard() {
                 </h1>
               )}
               <span className="text-xs text-stone-500 dark:text-stone-400 font-medium bg-stone-200/70 dark:bg-[#152219] dark:border dark:border-emerald-900/40 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
-                {filteredContents.length} {filteredContents.length === 1 ? "item" : "items"}
+                {loading ? (
+                  <span className="inline-block w-12 h-3.5 bg-stone-300 dark:bg-emerald-900/60 rounded animate-pulse align-middle" />
+                ) : (
+                  `${filteredContents.length} ${filteredContents.length === 1 ? "item" : "items"}`
+                )}
               </span>
             </div>
 
@@ -593,19 +598,17 @@ function DashBoard() {
 
         {/* Content Cards Grid */}
         <div>
-          {loading && (
-            <div className="w-full py-20 flex justify-center items-center">
-              <LoaderIcon />
-            </div>
+          {(loading || semanticLoading) && (
+            <CardSkeletonGrid count={6} />
           )}
 
-          {error && (
+          {error && !loading && (
             <div className="w-full text-red-500 dark:text-red-400 text-center py-10 font-medium">
               {error}
             </div>
           )}
 
-          {!loading && !error && filteredContents.length > 0 && (
+          {!loading && !semanticLoading && !error && filteredContents.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6 w-full min-w-0">
               {filteredContents.map(({ _id, type, link, title, note, tags, pinned }) => {
                 const semanticReason = semanticMatches.find((m) => m.id === _id)?.reason
@@ -630,7 +633,7 @@ function DashBoard() {
             </div>
           )}
 
-          {!loading && !error && filteredContents.length === 0 && (
+          {!loading && !semanticLoading && !error && filteredContents.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-white/80 dark:bg-[#121c15]/90 border border-stone-200/80 dark:border-emerald-950/70 rounded-3xl mt-4 shadow-xs">
               <div className="w-14 h-14 rounded-2xl bg-[#2d4a31]/10 dark:bg-emerald-950/70 text-[#2d4a31] dark:text-emerald-400 flex items-center justify-center mb-4 shadow-xs border border-[#2d4a31]/20 dark:border-emerald-800/50">
                 {searchQuery ? (
