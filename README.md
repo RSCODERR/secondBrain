@@ -37,6 +37,7 @@
   - [3. Frontend Setup](#3-frontend-setup)
 - [🔐 Environment Variables](#-environment-variables)
 - [📡 API Reference](#-api-reference)
+- [🛡 API Rate Limiting (Redis)](#-api-rate-limiting-redis)
 - [🌐 Deployment](#-deployment)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -268,6 +269,12 @@ Frontend will be accessible at `http://localhost:5173` (or `http://localhost:517
 | `DEEPSEEK_API_KEY`| Optional | DeepSeek API key for 3rd-tier failover |
 | `BREVO_API_KEY` | Optional | Brevo API key for sending verification/reset emails |
 | `EMAIL_FROM_ADDRESS` | Optional | Sender email address registered on Brevo |
+| `REDIS_URL` | **Yes** | Redis connection URI (supports standard Redis, Upstash, or Redis Cloud) |
+| `TRUST_PROXY` | Optional | Reverse proxy hop count (defaults to `1` in production for Render/Vercel) |
+| `RATE_LIMIT_LOGIN_MAX` | Optional | Max requests for `/signin` per window (defaults to `10`) |
+| `RATE_LIMIT_SIGNUP_MAX` | Optional | Max requests for `/signup` per window (defaults to `5`) |
+| `RATE_LIMIT_AI_MAX` | Optional | Max requests for AI operations per window (defaults to `30`) |
+| `RATE_LIMIT_GENERAL_MAX` | Optional | Max requests for general API per window (defaults to `100`) |
 
 ---
 
@@ -299,6 +306,66 @@ Frontend will be accessible at `http://localhost:5173` (or `http://localhost:517
 ### Sharing
 - `POST /api/v1/brain/share` — Enable public share link for your brain.
 - `GET /api/v1/brain/:shareLink` — Access public read-only brain view.
+
+---
+
+## 🛡 API Rate Limiting (Redis)
+
+Second Brain utilizes an enterprise-grade, distributed rate limiting system built on top of **Redis** using an **atomic sliding-window log algorithm**.
+
+### 💡 Why Redis Instead of In-Memory Counters?
+In-memory rate limiters (such as JavaScript `Map` objects or node-cache) have major production shortcomings:
+- **Distributed Instances & Autoscaling:** When the backend scales horizontally across multiple servers or serverless containers, an in-memory counter is isolated to each node. An attacker could bypass limits by distributing requests across nodes. Redis provides a **single source of truth** shared across all instances.
+- **Server Restarts & Deploys:** In-memory counters reset upon server restart or code redeployment, granting attackers fresh request quotas. Redis counters persist across deployments.
+- **Zero Memory Leaks:** Redis sliding window keys use precise millisecond TTLs (`PEXPIRE`), guaranteeing automatic self-destruct once clients become inactive.
+
+### ⚙️ How the Sliding Window Algorithm Works
+1. Requests are tracked inside a Redis **Sorted Set (`ZSET`)** per client IP and route group (`rl:<route>:<ip>`).
+2. Each request adds an entry with the current timestamp as its score.
+3. An atomic Lua script cleans up records older than `(now - windowMs)` using `ZREMRANGEBYSCORE`.
+4. It counts requests in the window (`ZCARD`). If under the limit, the request is recorded and processed.
+5. If the limit is exceeded, it retrieves the oldest timestamp in the sliding window to compute the exact `Retry-After` seconds until the earliest request expires.
+6. Because the check-and-increment executes inside an atomic Redis Lua script, it is **100% race-condition free** even under heavy concurrent loads.
+
+### 📊 Route Group Limits & Default Configurations
+
+| Route Group | Endpoints | Default Limit | Window | Outage Strategy |
+| :--- | :--- | :---: | :---: | :---: |
+| **Login** | `POST /api/v1/signin` | `10 req` | 1 minute | **Fail-Closed** (503) |
+| **Signup** | `POST /api/v1/signup` | `5 req` | 10 minutes | **Fail-Closed** (503) |
+| **Forgot Password** | `POST /api/v1/forgot-password` | `5 req` | 10 minutes | **Fail-Closed** (503) |
+| **Reset Password** | `POST /api/v1/reset-password` | `5 req` | 10 minutes | **Fail-Closed** (503) |
+| **AI Endpoints** | `POST /api/v1/ai/*` | `30 req` | 1 minute | **Fail-Open** (200) |
+| **General API** | `/me`, `/content`, `/tags`, `/brain/share`, etc. | `100 req` | 1 minute | **Fail-Open** (200) |
+| **Unrestricted** | `GET /api/v1/health`, public share viewers | Unlimited | — | No Rate Limiting |
+
+*All thresholds and window durations are fully customizable via environment variables in `backend/.env`.*
+
+### 🛑 Example `429 Too Many Requests` Response
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json; charset=utf-8
+Retry-After: 48
+RateLimit-Limit: 10
+RateLimit-Remaining: 0
+RateLimit-Reset: 48
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1770643920
+```
+
+```json
+{
+  "success": false,
+  "message": "Too many sign-in attempts. Please wait a minute and try again."
+}
+```
+
+### ⚡ Redis Failure Behavior (Fail-Open vs Fail-Closed)
+If Redis becomes temporarily unreachable or suffers network degradation:
+- **Normal API & AI Endpoints:** **Fail-Open** — Requests proceed normally so that an outage in Redis does not bring down the entire application for legitimate users.
+- **Sensitive Auth Endpoints:** **Fail-Closed** — Requests to login, signup, and password reset endpoints return HTTP 503 (`Authentication service is temporarily unavailable. Please try again shortly.`). This guarantees that credential stuffing, brute-force attacks, and password-reset spam cannot exploit Redis downtime.
 
 ---
 

@@ -18,8 +18,32 @@ import crypto from "crypto";
 import cors from "cors";
 import { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendBugReportEmail, sendContactEmail } from "./utils/mailer";
 import { askBrain, summarizeCard, suggestTags, semanticSearch } from "./services/aiService";
+import { getRedisClient, closeRedis } from "./database/redis";
+import {
+    loginRateLimiter,
+    signupRateLimiter,
+    forgotPasswordRateLimiter,
+    resetPasswordRateLimiter,
+    aiRateLimiter,
+    generalRateLimiter
+} from "./middlewares/rateLimiters";
 
 const app = express();
+
+// Reverse proxy configuration: honors X-Forwarded-For when behind Render/Vercel/Cloudflare
+const trustProxySetting = process.env.TRUST_PROXY ?? (process.env.NODE_ENV === "production" ? "1" : "false");
+if (trustProxySetting === "true") {
+    app.set("trust proxy", true);
+} else if (trustProxySetting === "false") {
+    app.set("trust proxy", false);
+} else if (!isNaN(Number(trustProxySetting))) {
+    app.set("trust proxy", Number(trustProxySetting));
+} else {
+    app.set("trust proxy", trustProxySetting);
+}
+
+// Initialize Redis client connection in background (non-blocking)
+getRedisClient();
 
 app.use(express.json());
 app.use(cors({
@@ -46,7 +70,7 @@ app.use(cors({
 }));
 app.use(cookieParser());
 
-app.post("/api/v1/signup", async (req, res) => {
+app.post("/api/v1/signup", signupRateLimiter, async (req, res) => {
     const requiredBody = z.object({
         username: z.string().min(4, "Username too short").max(25, "Username too long"),
         email: z.string().email("Invalid email format"),
@@ -193,7 +217,7 @@ app.post("/api/v1/signup", async (req, res) => {
 });
 
 // Verify email with 6-digit OTP code
-app.post("/api/v1/verify-email", async (req, res) => {
+app.post("/api/v1/verify-email", generalRateLimiter, async (req, res) => {
     try {
         const { email, code } = req.body;
         if (!email || !code) {
@@ -258,7 +282,7 @@ app.post("/api/v1/verify-email", async (req, res) => {
 });
 
 // Resend OTP email with rate limiting
-app.post("/api/v1/resend-verification", async (req, res) => {
+app.post("/api/v1/resend-verification", generalRateLimiter, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -292,7 +316,7 @@ app.post("/api/v1/resend-verification", async (req, res) => {
 });
 
 // Initiate password reset: sends 6-digit OTP code to user's email
-app.post("/api/v1/forgot-password", async (req, res) => {
+app.post("/api/v1/forgot-password", forgotPasswordRateLimiter, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -334,7 +358,7 @@ app.post("/api/v1/forgot-password", async (req, res) => {
 });
 
 // Complete password reset: validates OTP code and updates password
-app.post("/api/v1/reset-password", async (req, res) => {
+app.post("/api/v1/reset-password", resetPasswordRateLimiter, async (req, res) => {
     try {
         const resetSchema = z.object({
             email: z.string().email("Invalid email format"),
@@ -388,7 +412,7 @@ app.post("/api/v1/reset-password", async (req, res) => {
     }
 });
 
-app.post("/api/v1/signin", async (req, res) => {
+app.post("/api/v1/signin", loginRateLimiter, async (req, res) => {
      const identifier = (req.body.identifier || req.body.username || req.body.email || "").trim().toLowerCase();
      const { password, rememberMe } = req.body;
 
@@ -474,7 +498,7 @@ app.post("/api/v1/signin", async (req, res) => {
 
 });
 
-app.get("/api/v1/me", userMiddleware, async (req, res) => {
+app.get("/api/v1/me", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
@@ -496,7 +520,7 @@ app.get("/api/v1/me", userMiddleware, async (req, res) => {
     }
 });
 
-app.post("/api/v1/logout", (req, res) => {
+app.post("/api/v1/logout", generalRateLimiter, (req, res) => {
     const isProduction = process.env.NODE_ENV === "production";
     res.clearCookie("token", {
         httpOnly: true,
@@ -617,7 +641,7 @@ export async function cleanupOrphanedTags(
   }
 }
 
-app.post("/api/v1/content", userMiddleware, async (req, res) => {
+app.post("/api/v1/content", generalRateLimiter, userMiddleware, async (req, res) => {
   try {
     const { title, link, note, type, tags: rawTags, pinned } = req.body;
 
@@ -673,7 +697,7 @@ app.post("/api/v1/content", userMiddleware, async (req, res) => {
 });
 
 
-app.get("/api/v1/content", userMiddleware, async (req, res) => {
+app.get("/api/v1/content", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
@@ -693,7 +717,7 @@ app.get("/api/v1/content", userMiddleware, async (req, res) => {
 });
 
 
-app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
+app.delete("/api/v1/content/:id", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         const contentId = req.params.id;
         // @ts-ignore
@@ -733,7 +757,7 @@ app.delete("/api/v1/content/:id", userMiddleware, async (req, res) => {
     }
 });
 
-app.put("/api/v1/content/:id", userMiddleware, async (req, res) => {
+app.put("/api/v1/content/:id", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         const contentId = req.params.id;
         // @ts-ignore
@@ -843,10 +867,10 @@ const togglePinHandler = async (req: express.Request, res: express.Response) => 
     }
 };
 
-app.patch("/api/v1/content/:id/pin", userMiddleware, togglePinHandler);
-app.put("/api/v1/content/:id/pin", userMiddleware, togglePinHandler);
+app.patch("/api/v1/content/:id/pin", generalRateLimiter, userMiddleware, togglePinHandler);
+app.put("/api/v1/content/:id/pin", generalRateLimiter, userMiddleware, togglePinHandler);
 
-app.get("/api/v1/tags", userMiddleware, async (req, res) => {
+app.get("/api/v1/tags", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
@@ -882,7 +906,7 @@ app.get("/api/v1/tags", userMiddleware, async (req, res) => {
     }
 });
 
-app.post("/api/v1/ai/chat", userMiddleware, async (req, res) => {
+app.post("/api/v1/ai/chat", aiRateLimiter, userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
@@ -919,7 +943,7 @@ app.post("/api/v1/ai/chat", userMiddleware, async (req, res) => {
     }
 });
 
-app.post("/api/v1/ai/summarize", async (req, res) => {
+app.post("/api/v1/ai/summarize", aiRateLimiter, async (req, res) => {
     try {
         const { cardId, title, type, link, note, tags } = req.body;
 
@@ -968,7 +992,7 @@ app.post("/api/v1/ai/summarize", async (req, res) => {
     }
 });
 
-app.post("/api/v1/ai/suggest-tags", async (req, res) => {
+app.post("/api/v1/ai/suggest-tags", aiRateLimiter, async (req, res) => {
     try {
         const { title, type, link, note, existingTags } = req.body;
 
@@ -1010,7 +1034,7 @@ app.post("/api/v1/ai/suggest-tags", async (req, res) => {
     }
 });
 
-app.post("/api/v1/ai/semantic-search", async (req, res) => {
+app.post("/api/v1/ai/semantic-search", aiRateLimiter, async (req, res) => {
     try {
         const { query, contents: clientContents } = req.body;
 
@@ -1059,7 +1083,7 @@ app.post("/api/v1/ai/semantic-search", async (req, res) => {
     }
 });
 
-app.post("/api/v1/brain/share",userMiddleware, async (req,res) => {
+app.post("/api/v1/brain/share", generalRateLimiter, userMiddleware, async (req,res) => {
     try {
         //@ts-ignore
         const userId = req.userId;
@@ -1176,7 +1200,7 @@ app.get("/api/v1/check-username", async (req, res) => {
 });
 
 // Change the authenticated user's username
-app.put("/api/v1/user/username", userMiddleware, async (req, res) => {
+app.put("/api/v1/user/username", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
@@ -1208,7 +1232,7 @@ app.put("/api/v1/user/username", userMiddleware, async (req, res) => {
 });
 
 // Delete the authenticated user's account (requires password confirmation)
-app.delete("/api/v1/user", userMiddleware, async (req, res) => {
+app.delete("/api/v1/user", generalRateLimiter, userMiddleware, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.userId;
@@ -1274,7 +1298,7 @@ app.get("/api/v1/health", async (_req, res) => {
 });
 
 // ─── Report a Bug ────────────────────────────────────────────────────────────
-app.post("/api/v1/report-bug", userMiddleware, async (req, res) => {
+app.post("/api/v1/report-bug", generalRateLimiter, userMiddleware, async (req, res) => {
     const schema = z.object({
         category: z.enum(["ui", "auth", "content", "performance", "other"]),
         title: z.string().min(3, "Title too short").max(120, "Title too long"),
@@ -1314,7 +1338,7 @@ app.post("/api/v1/report-bug", userMiddleware, async (req, res) => {
 });
 
 // ─── Contact Us Inbound Dispatcher ──────────────────────────────────────────
-app.post("/api/v1/contact", async (req, res) => {
+app.post("/api/v1/contact", generalRateLimiter, async (req, res) => {
     const schema = z.object({
         name: z.string().min(2, "Name must be at least 2 characters").max(60, "Name too long"),
         email: z.string().email("Please provide a valid email address"),
@@ -1363,8 +1387,22 @@ connectDB().then(() => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+if (process.env.NODE_ENV !== "test") {
+    app.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+    });
+}
+
+// Graceful shutdown handlers
+process.on("SIGTERM", async () => {
+    console.log("[Shutdown] SIGTERM received. Closing Redis connection...");
+    await closeRedis();
+    process.exit(0);
+});
+process.on("SIGINT", async () => {
+    console.log("[Shutdown] SIGINT received. Closing Redis connection...");
+    await closeRedis();
+    process.exit(0);
 });
 
 // Keep-Alive self-ping: Runs every 14 minutes in production to prevent Render spin-down
@@ -1380,3 +1418,6 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_KEEP_ALIVE === "
         }
     }, 14 * 60 * 1000);
 }
+
+export { app };
+export default app;
